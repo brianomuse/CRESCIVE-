@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://crescive.ai.studio/sitemap.xml

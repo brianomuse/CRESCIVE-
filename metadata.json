@@ -1,0 +1,6 @@
+{
+  "name": "CRESCIVE",
+  "description": "CRESCIVE is a personal growth app created and founded by Brian Omuse that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
