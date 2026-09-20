@@ -7,6 +7,7 @@ import { CresciveDailyCard } from "./CresciveDailyCard";
 import { CresciveDailyModal } from "./CresciveDailyModal";
 import { HomeLeaderboardCard } from "../Leaderboard/HomeLeaderboardCard";
 import { GlobalLeaderboardModal } from "../Leaderboard/GlobalLeaderboardModal";
+import { HelpButton } from "../Help/HelpButton";
 import { getStoredDailyState } from "../../utils/cresciveDailyStorage";
 import {
   Sparkles,
@@ -34,6 +35,7 @@ interface HomeScreenProps {
   onNavigateTab: (tab: "home" | "moves" | "fun" | "categories" | "future" | "navigator" | "profile") => void;
   onOpenCreatorStory: () => void;
   onStartFocusSession?: (move: MoveItem | null, customDuration?: number) => void;
+  onOpenHelpGuide?: () => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
@@ -44,6 +46,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateTab,
   onOpenCreatorStory,
   onStartFocusSession,
+  onOpenHelpGuide,
 }) => {
   const preferredName = userProfile.preferredName || "Traveler";
 
@@ -656,6 +659,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           Enter Fun Zone
         </button>
       </motion.section>
+
+      {/* HELP / HOW TO USE THE APP (At the very bottom of the Home section) */}
+      {onOpenHelpGuide && (
+        <div className="pt-3 pb-2 flex justify-center">
+          <HelpButton onClick={onOpenHelpGuide} />
+        </div>
+      )}
     </div>
   );
 };

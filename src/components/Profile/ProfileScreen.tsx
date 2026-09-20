@@ -28,7 +28,6 @@ import {
   Smartphone,
   Shield,
   FileText,
-  Download,
 } from "lucide-react";
 import { PWAInstallButton } from "../PWA/PWAInstallButton";
 import { PrivacyPolicyModal } from "./PrivacyPolicyModal";
@@ -44,6 +43,7 @@ import {
 } from "../../utils/reminderEngine";
 import { LeaderboardCard } from "../Leaderboard/LeaderboardCard";
 import { GlobalLeaderboardModal } from "../Leaderboard/GlobalLeaderboardModal";
+import { HelpButton } from "../Help/HelpButton";
 import {
   fetchLeaderboardData,
   calculateUserStats,
@@ -59,6 +59,7 @@ interface ProfileScreenProps {
   onResetOnboarding: () => void;
   onOpenCreatorStory: () => void;
   onOpenCreateMove?: () => void;
+  onOpenHelpGuide?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -69,6 +70,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onResetOnboarding,
   onOpenCreatorStory,
   onOpenCreateMove,
+  onOpenHelpGuide,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(userProfile.preferredName);
@@ -845,17 +847,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
-          <a
-            id="btn-download-app-zip"
-            href="/crescive-app.zip"
-            download="crescive-app.zip"
-            className="py-2 px-3.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shadow-[0_0_15px_rgba(0,229,255,0.15)]"
-            title="Download full project source code archive (.zip)"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>App Source (.zip)</span>
-          </a>
-
           <button
             id="btn-open-privacy-policy"
             onClick={() => setIsPrivacyModalOpen(true)}
@@ -886,6 +877,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <span>Re-initialize</span>
         </button>
       </div>
+
+      {/* HELP / HOW TO USE THE APP (At the very bottom of Profile section) */}
+      {onOpenHelpGuide && (
+        <div className="pt-4 border-t border-white/5 flex justify-center">
+          <HelpButton onClick={onOpenHelpGuide} />
+        </div>
+      )}
 
       {/* Privacy Policy & Legal Modal */}
       <PrivacyPolicyModal

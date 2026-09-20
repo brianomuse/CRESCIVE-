@@ -9,7 +9,6 @@
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "zip": "python3 scripts/create_zip.py",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

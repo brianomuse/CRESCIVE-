@@ -11,6 +11,8 @@ import { ProfileScreen } from "./components/Profile/ProfileScreen";
 import { FunZoneScreen } from "./components/FunZone/FunZoneScreen";
 import { CreateMoveModal } from "./components/Moves/CreateMoveModal";
 import { CreatorStoryModal } from "./components/CreatorStoryModal";
+import { FirstMoveWelcomeModal } from "./components/Onboarding/FirstMoveWelcomeModal";
+import { HelpGuideModal } from "./components/Help/HelpGuideModal";
 import { ActiveReminderModal } from "./components/Moves/ActiveReminderModal";
 import { DeepWorkSanctuary } from "./components/Focus/DeepWorkSanctuary";
 import { CresciveLogo } from "./components/CresciveLogo";
@@ -39,6 +41,7 @@ import {
 
 const STORAGE_KEY_PROFILE = "crescive_user_profile_v1";
 const STORAGE_KEY_MOVES = "crescive_user_moves_v1";
+const STORAGE_KEY_FIRST_MOVE_PROMPT = "crescive_first_move_welcome_seen_v1";
 
 export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
@@ -68,6 +71,8 @@ export default function App() {
   const [defaultMoveDomain, setDefaultMoveDomain] = useState<string | undefined>(undefined);
   const [isCreatorStoryOpen, setIsCreatorStoryOpen] = useState(false);
   const [isMobileFrameActive, setIsMobileFrameActive] = useState(false);
+  const [isFirstMovePromptOpen, setIsFirstMovePromptOpen] = useState(false);
+  const [isHelpGuideOpen, setIsHelpGuideOpen] = useState(false);
 
   // Active Reminder Alarm State
   const [activeReminderMove, setActiveReminderMove] = useState<MoveItem | null>(null);
@@ -93,6 +98,38 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_MOVES, JSON.stringify(moves));
   }, [moves]);
+
+  // First Move Welcome Prompt: Triggers for a new user reaching Home with 0 moves who hasn't seen or skipped it
+  useEffect(() => {
+    if (!userProfile || !userProfile.onboardingCompleted) return;
+    if (currentTab !== "home") return;
+    if (moves.length > 0) return;
+
+    try {
+      const hasSeenPrompt = localStorage.getItem(STORAGE_KEY_FIRST_MOVE_PROMPT);
+      if (hasSeenPrompt === "true") return;
+
+      const timer = setTimeout(() => {
+        setIsFirstMovePromptOpen(true);
+      }, 700);
+
+      return () => clearTimeout(timer);
+    } catch {
+      // Safe fallback
+    }
+  }, [userProfile, currentTab, moves.length]);
+
+  // If moves are added anywhere, dismiss prompt and mark seen
+  useEffect(() => {
+    if (moves.length > 0 && isFirstMovePromptOpen) {
+      setIsFirstMovePromptOpen(false);
+      try {
+        localStorage.setItem(STORAGE_KEY_FIRST_MOVE_PROMPT, "true");
+      } catch {
+        // Safe ignore
+      }
+    }
+  }, [moves.length, isFirstMovePromptOpen]);
 
   // Real-time Reminder Monitor
   useEffect(() => {
@@ -183,9 +220,30 @@ export default function App() {
   const handleResetOnboarding = () => {
     localStorage.removeItem(STORAGE_KEY_PROFILE);
     localStorage.removeItem(STORAGE_KEY_MOVES);
+    localStorage.removeItem(STORAGE_KEY_FIRST_MOVE_PROMPT);
     setUserProfile(null);
     setMoves([]);
     setCurrentTab("home");
+    setIsFirstMovePromptOpen(false);
+  };
+
+  const handleSkipFirstMovePrompt = () => {
+    setIsFirstMovePromptOpen(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_FIRST_MOVE_PROMPT, "true");
+    } catch {
+      // Safe ignore
+    }
+  };
+
+  const handleAcceptFirstMovePrompt = () => {
+    setIsFirstMovePromptOpen(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_FIRST_MOVE_PROMPT, "true");
+    } catch {
+      // Safe ignore
+    }
+    setCurrentTab("moves");
   };
 
   const openCreateMoveWithDomain = (domainTitle: string) => {
@@ -378,6 +436,7 @@ export default function App() {
                   onNavigateTab={(tab) => setCurrentTab(tab)}
                   onOpenCreatorStory={() => setIsCreatorStoryOpen(true)}
                   onStartFocusSession={handleStartFocusSession}
+                  onOpenHelpGuide={() => setIsHelpGuideOpen(true)}
                 />
               </motion.div>
             )}
@@ -478,6 +537,7 @@ export default function App() {
                   onResetOnboarding={handleResetOnboarding}
                   onOpenCreatorStory={() => setIsCreatorStoryOpen(true)}
                   onOpenCreateMove={() => handleOpenCreateMove("create")}
+                  onOpenHelpGuide={() => setIsHelpGuideOpen(true)}
                 />
               </motion.div>
             )}
@@ -545,6 +605,19 @@ export default function App() {
       <CreatorStoryModal
         isOpen={isCreatorStoryOpen}
         onClose={() => setIsCreatorStoryOpen(false)}
+      />
+
+      {/* First Move Welcome Prompt Modal (Interactive New User Introduction) */}
+      <FirstMoveWelcomeModal
+        isOpen={isFirstMovePromptOpen}
+        onClose={handleSkipFirstMovePrompt}
+        onAddMove={handleAcceptFirstMovePrompt}
+      />
+
+      {/* CRESCIVE How to Use the App / Help Guide Modal */}
+      <HelpGuideModal
+        isOpen={isHelpGuideOpen}
+        onClose={() => setIsHelpGuideOpen(false)}
       />
 
       {/* Active Reminder Alarm Modal */}
