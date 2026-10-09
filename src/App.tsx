@@ -16,6 +16,14 @@ import { HelpGuideModal } from "./components/Help/HelpGuideModal";
 import { ActiveReminderModal } from "./components/Moves/ActiveReminderModal";
 import { DeepWorkSanctuary } from "./components/Focus/DeepWorkSanctuary";
 import { CresciveLogo } from "./components/CresciveLogo";
+import { ChatScreen } from "./components/Chat/ChatScreen";
+import { FirebaseAuthProvider } from "./contexts/FirebaseAuthContext";
+import { auth } from "./lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+  syncTrajectoryWithCloud,
+  listenToRemoteTrajectory,
+} from "./utils/trajectorySyncService";
 import { PWAInstallPrompt } from "./components/PWA/PWAInstallPrompt";
 import { OfflineBanner } from "./components/PWA/OfflineBanner";
 import {
@@ -25,6 +33,11 @@ import {
   getStoredReminderSettings,
 } from "./utils/reminderEngine";
 import { initActiveTimeTracker } from "./utils/activeTimeTracker";
+import {
+  getBrowserNotificationPermission,
+  registerPushNotificationToken,
+  setupForegroundPushListener,
+} from "./utils/notificationService";
 import {
   Sparkles,
   CheckSquare,
@@ -36,7 +49,8 @@ import {
   BookOpen,
   Smartphone,
   Maximize2,
-  PartyPopper
+  PartyPopper,
+  MessageSquare
 } from "lucide-react";
 
 const STORAGE_KEY_PROFILE = "crescive_user_profile_v1";
@@ -63,11 +77,12 @@ export default function App() {
   });
 
   const [currentTab, setCurrentTab] = useState<
-    "home" | "moves" | "fun" | "categories" | "future" | "navigator" | "profile"
+    "home" | "moves" | "fun" | "categories" | "future" | "navigator" | "chat" | "profile"
   >("home");
 
   const [isCreateMoveOpen, setIsCreateMoveOpen] = useState(false);
   const [createModalMode, setCreateModalMode] = useState<"create" | "ideas">("create");
+  const [editingMove, setEditingMove] = useState<MoveItem | null>(null);
   const [defaultMoveDomain, setDefaultMoveDomain] = useState<string | undefined>(undefined);
   const [isCreatorStoryOpen, setIsCreatorStoryOpen] = useState(false);
   const [isMobileFrameActive, setIsMobileFrameActive] = useState(false);
@@ -87,6 +102,95 @@ export default function App() {
     const cleanup = initActiveTimeTracker();
     return cleanup;
   }, []);
+
+  // Handle URL navigation (e.g. from notification clicks: /?tab=chat or /?tab=moves)
+  useEffect(() => {
+    const handleUrlNavigation = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (
+        tabParam &&
+        ["home", "moves", "fun", "categories", "future", "navigator", "chat", "profile"].includes(
+          tabParam
+        )
+      ) {
+        setCurrentTab(tabParam as any);
+      }
+    };
+
+    handleUrlNavigation();
+    window.addEventListener("popstate", handleUrlNavigation);
+    return () => window.removeEventListener("popstate", handleUrlNavigation);
+  }, []);
+
+  // Push notifications listener and token registration
+  useEffect(() => {
+    // If browser permission is already granted, register FCM token
+    if (getBrowserNotificationPermission() === "granted") {
+      registerPushNotificationToken().catch(() => {});
+    }
+
+    // Set up foreground push listener
+    let unsubForegroundPush: (() => void) | undefined;
+    setupForegroundPushListener((payload) => {
+      console.log("[App] Foreground push notification received:", payload);
+    }).then((unsub) => {
+      unsubForegroundPush = unsub;
+    });
+
+    return () => {
+      if (unsubForegroundPush) unsubForegroundPush();
+    };
+  }, []);
+
+  // Automatic Cloud Trajectory Sync (Feature 1)
+  // When user signs in, restore & reconcile trajectory from Firestore
+  useEffect(() => {
+    let unsubRemoteListener: (() => void) | undefined;
+
+    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User authenticated on this device: sync and restore trajectory
+        await syncTrajectoryWithCloud(user.uid, ({ moves: restoredMoves, userProfile: restoredProfile }) => {
+          if (restoredMoves && restoredMoves.length > 0) {
+            setMoves(restoredMoves);
+          }
+          if (restoredProfile && restoredProfile.onboardingCompleted) {
+            setUserProfile(restoredProfile);
+          }
+        });
+
+        // Listen in real-time to remote updates from other devices (Device B)
+        unsubRemoteListener = listenToRemoteTrajectory(user.uid, ({ moves: remoteMoves, userProfile: remoteProfile }) => {
+          if (remoteMoves) {
+            setMoves(remoteMoves);
+          }
+          if (remoteProfile && remoteProfile.onboardingCompleted) {
+            setUserProfile(remoteProfile);
+          }
+        });
+      } else {
+        if (unsubRemoteListener) {
+          unsubRemoteListener();
+          unsubRemoteListener = undefined;
+        }
+      }
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubRemoteListener) unsubRemoteListener();
+    };
+  }, []);
+
+  // Automatic background debounce push to Firestore when moves or profile update locally
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const timer = setTimeout(() => {
+      syncTrajectoryWithCloud(auth.currentUser!.uid);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [moves, userProfile?.preferredName, userProfile?.avatarUrl, userProfile?.becoming, userProfile?.fiveYearVision]);
 
   // Sync to local storage
   useEffect(() => {
@@ -169,9 +273,23 @@ export default function App() {
   };
 
   const handleOpenCreateMove = (mode: "create" | "ideas" = "create") => {
+    setEditingMove(null);
     setCreateModalMode(mode);
     setDefaultMoveDomain(undefined);
     setIsCreateMoveOpen(true);
+  };
+
+  const handleEditMove = (move: MoveItem) => {
+    setEditingMove(move);
+    setDefaultMoveDomain(move.domain);
+    setCreateModalMode("create");
+    setIsCreateMoveOpen(true);
+  };
+
+  const handleUpdateMove = (id: string, updated: Partial<MoveItem>) => {
+    setMoves((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...updated } : m))
+    );
   };
 
   const handleAddMove = (moveData: Omit<MoveItem, "id" | "createdAt">) => {
@@ -339,7 +457,8 @@ export default function App() {
   const preferredName = userProfile.preferredName || "Traveler";
 
   return (
-    <div className="min-h-screen bg-[#050510] text-[#f5f5f0] relative overflow-x-hidden flex flex-col items-center">
+    <FirebaseAuthProvider userProfile={userProfile}>
+      <div className="min-h-screen bg-[#050510] text-[#f5f5f0] relative overflow-x-hidden flex flex-col items-center">
       {/* Background ambient lighting matching Elegant Dark */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.1)_0%,transparent_70%)] animate-aurora" />
@@ -378,7 +497,7 @@ export default function App() {
               id="header-creator-story-btn"
               onClick={() => setIsCreatorStoryOpen(true)}
               className="flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-[#101025] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/50 text-[#D4AF37] text-xs font-semibold shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-              title="Read Creator Brian Omuse's Story (Age 14)"
+              title="Brian's Story — Creator & Founder of CRESCIVE (Malaba, Kenya)"
             >
               <div className="w-4 h-4 rounded-full overflow-hidden shrink-0 border border-[#D4AF37]/70 bg-[#050510]">
                 <img
@@ -452,6 +571,7 @@ export default function App() {
                 <MovesScreen
                   moves={moves}
                   onOpenCreateMove={handleOpenCreateMove}
+                  onEditMove={handleEditMove}
                   onToggleMove={handleToggleMove}
                   onDeleteMove={handleDeleteMove}
                   onStartFocusSession={handleStartFocusSession}
@@ -521,6 +641,22 @@ export default function App() {
               </motion.div>
             )}
 
+            {currentTab === "chat" && (
+              <motion.div
+                key="tab-chat"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChatScreen
+                  userProfile={userProfile}
+                  moves={moves}
+                  onOpenHelpGuide={() => setIsHelpGuideOpen(true)}
+                />
+              </motion.div>
+            )}
+
             {currentTab === "profile" && (
               <motion.div
                 key="tab-profile"
@@ -547,11 +683,11 @@ export default function App() {
         {/* Floating Mobile Bottom Navigation Bar / Category Board */}
         <nav
           id="category-navigation-board"
-          className={`fixed safe-bottom-nav left-1/2 -translate-x-1/2 z-40 w-[calc(100%-12px)] sm:w-[94%] ${
-            isMobileFrameActive ? "max-w-[420px]" : "max-w-2xl"
-          } bg-[#101025]/90 border border-[#D4AF37]/30 rounded-2xl sm:rounded-3xl py-2 px-1 sm:p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-all duration-200`}
+          className={`fixed safe-bottom-nav left-1/2 -translate-x-1/2 z-40 w-[calc(100%-8px)] sm:w-[96%] ${
+            isMobileFrameActive ? "max-w-[440px]" : "max-w-3xl"
+          } bg-[#101025]/95 border border-[#D4AF37]/35 rounded-2xl sm:rounded-3xl py-1.5 px-0.5 sm:py-2.5 sm:px-2 shadow-[0_12px_40px_rgba(0,0,0,0.85)] backdrop-blur-xl transition-all duration-200`}
         >
-          <div className="grid grid-cols-7 items-center w-full">
+          <div className="grid grid-cols-8 items-center w-full gap-0.5">
             {[
               { id: "home", label: "Home", icon: Sparkles },
               { id: "moves", label: "Moves", icon: CheckSquare },
@@ -559,6 +695,7 @@ export default function App() {
               { id: "categories", label: "15 Map", icon: Layers },
               { id: "future", label: "Future", icon: Compass },
               { id: "navigator", label: "Navigator", icon: Brain },
+              { id: "chat", label: "Chat", icon: MessageSquare },
               { id: "profile", label: "Profile", icon: User },
             ].map((tab) => {
               const isActive = currentTab === tab.id;
@@ -567,18 +704,19 @@ export default function App() {
                 <button
                   key={tab.id}
                   onClick={() => setCurrentTab(tab.id as any)}
-                  className={`relative w-full py-1.5 sm:py-2.5 px-0.5 sm:px-1.5 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                  aria-label={tab.label}
+                  className={`relative w-full py-1 sm:py-2 px-0.5 rounded-xl flex flex-col items-center justify-center gap-0.5 sm:gap-1 transition-all cursor-pointer ${
                     isActive ? "text-[#D4AF37]" : "text-[#f5f5f0]/50 hover:text-[#f5f5f0]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${isActive ? "text-[#D4AF37] stroke-[2.5]" : ""}`} />
-                  <span className="text-[9px] min-[360px]:text-[9.5px] min-[400px]:text-[10px] sm:text-[11px] font-semibold tracking-tight min-[400px]:tracking-normal sm:tracking-wider text-center truncate max-w-full leading-tight">
+                  <Icon className={`w-3.5 h-3.5 min-[360px]:w-4 min-[360px]:h-4 sm:w-5 sm:h-5 shrink-0 ${isActive ? "text-[#D4AF37] stroke-[2.5]" : ""}`} />
+                  <span className="text-[8px] min-[360px]:text-[8.5px] min-[400px]:text-[9.5px] sm:text-[11px] font-semibold tracking-tight min-[400px]:tracking-normal sm:tracking-wider text-center truncate max-w-full leading-none">
                     {tab.label}
                   </span>
                   {isActive && (
                     <motion.div
                       layoutId="active-nav-glow"
-                      className="absolute -bottom-1 w-5 sm:w-6 h-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B8860B] shadow-[0_0_10px_rgba(212,175,55,0.6)]"
+                      className="absolute -bottom-1 w-4 sm:w-6 h-1 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B8860B] shadow-[0_0_10px_rgba(212,175,55,0.6)]"
                     />
                   )}
                 </button>
@@ -592,12 +730,15 @@ export default function App() {
       <CreateMoveModal
         isOpen={isCreateMoveOpen}
         initialMode={createModalMode}
+        initialMove={editingMove}
         userProfile={userProfile}
         onClose={() => {
           setIsCreateMoveOpen(false);
+          setEditingMove(null);
           setDefaultMoveDomain(undefined);
         }}
         onAddMove={handleAddMove}
+        onUpdateMove={handleUpdateMove}
         defaultDomain={defaultMoveDomain}
       />
 
@@ -653,5 +794,6 @@ export default function App() {
         isFocusSessionActive={isFocusSanctuaryOpen}
       />
     </div>
+    </FirebaseAuthProvider>
   );
 }

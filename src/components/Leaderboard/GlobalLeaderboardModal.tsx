@@ -223,207 +223,242 @@ export const GlobalLeaderboardModal: React.FC<GlobalLeaderboardModalProps> = ({
 
           {/* Scrollable Leaderboard Area */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-            {/* Top 3 Podium Visual Display */}
-            {topThree.length > 0 && (
-              <div>
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#D4AF37] block mb-3 font-semibold">
-                  TOP LEADING TRAJECTORIES
-                </span>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {topThree.map((user, idx) => {
-                    const isFirst = idx === 0;
-                    const isSecond = idx === 1;
-                    const isThird = idx === 2;
-
-                    const medalStyles = isFirst
-                      ? "border-[#D4AF37] bg-gradient-to-b from-[#D4AF37]/20 to-[#101025] shadow-[0_0_25px_rgba(212,175,55,0.25)]"
-                      : isSecond
-                      ? "border-slate-300/60 bg-gradient-to-b from-slate-300/15 to-[#101025] shadow-[0_0_20px_rgba(203,213,225,0.15)]"
-                      : "border-amber-600/60 bg-gradient-to-b from-amber-600/15 to-[#101025] shadow-[0_0_20px_rgba(217,119,6,0.15)]";
-
-                    const medalBadge = isFirst
-                      ? { icon: Crown, label: "#1", color: "text-[#D4AF37]", bg: "bg-[#D4AF37]/20 border-[#D4AF37]" }
-                      : isSecond
-                      ? { icon: Medal, label: "#2", color: "text-slate-200", bg: "bg-slate-300/20 border-slate-300" }
-                      : { icon: Award, label: "#3", color: "text-amber-400", bg: "bg-amber-600/20 border-amber-600" };
-
-                    const MedalIcon = medalBadge.icon;
-
-                    return (
-                      <motion.div
-                        key={user.id}
-                        whileHover={{ y: -3 }}
-                        className={`rounded-2xl p-4 border flex flex-col items-center text-center relative overflow-hidden transition-all ${medalStyles} ${
-                          user.isCurrentUser ? "ring-2 ring-[#D4AF37]" : ""
-                        }`}
-                      >
-                        {/* Rank Badge */}
-                        <div
-                          className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full border text-[10px] font-mono font-bold flex items-center gap-1 ${medalBadge.bg} ${medalBadge.color}`}
-                        >
-                          <MedalIcon className="w-3 h-3" />
-                          <span>{medalBadge.label}</span>
-                        </div>
-
-                        {/* Avatar */}
-                        <div
-                          className={`w-14 h-14 rounded-2xl p-[2px] mt-1 shadow-lg ${
-                            isFirst
-                              ? "bg-gradient-to-tr from-[#D4AF37] to-[#FFF1C5]"
-                              : isSecond
-                              ? "bg-gradient-to-tr from-slate-200 to-slate-400"
-                              : "bg-gradient-to-tr from-amber-500 to-amber-700"
-                          }`}
-                        >
-                          <div className="w-full h-full rounded-[14px] bg-[#050510] overflow-hidden flex items-center justify-center">
-                            {user.avatarUrl ? (
-                              <img
-                                src={user.avatarUrl}
-                                alt={user.username}
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <span className="text-xl font-bold font-serif-cresive text-[#D4AF37]">
-                                {user.username.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Username & Badge */}
-                        <h4 className="text-sm font-semibold text-white mt-2.5 truncate max-w-full flex items-center gap-1">
-                          <span>{user.username}</span>
-                          {user.isCurrentUser && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37] text-black font-bold">
-                              YOU
-                            </span>
-                          )}
-                        </h4>
-
-                        <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                          {user.country || "Global"} · {user.chapter || "BUILDING"}
-                        </p>
-
-                        {/* XP & Stats */}
-                        <div className="mt-3 pt-2.5 border-t border-white/10 w-full flex items-center justify-around text-xs">
-                          <div>
-                            <span className="text-[9px] font-mono text-zinc-400 uppercase block">Level</span>
-                            <span className="font-mono font-bold text-white">Lvl {user.level}</span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] font-mono text-zinc-400 uppercase block">XP</span>
-                            <span className="font-mono font-bold text-[#D4AF37]">
-                              {filter === "weekly" ? user.weeklyXp : user.totalXp}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[9px] font-mono text-zinc-400 uppercase block">Moves</span>
-                            <span className="font-mono font-bold text-zinc-200">{user.completedMoves}</span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+            {entries.length === 0 ? (
+              <div className="py-16 px-6 text-center flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-[#D4AF37] mb-4">
+                  <Sparkles className="w-8 h-8 text-[#D4AF37]" />
                 </div>
+                <h3 className="text-xl font-light text-white mb-2 font-serif-cresive">
+                  You&apos;re early.
+                </h3>
+                <p className="text-sm text-zinc-300 max-w-sm mb-1 font-light leading-relaxed">
+                  The CRESCIVE community is still growing.
+                </p>
+                <p className="text-xs text-zinc-400 font-mono">
+                  Real users will appear here as they join.
+                </p>
+                {onOpenCreateMove && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenCreateMove();
+                    }}
+                    className="mt-6 py-2.5 px-6 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black text-xs font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Complete a Move to Claim #1
+                  </button>
+                )}
               </div>
-            )}
+            ) : (
+              <>
+                {/* Top Leading Trajectories Visual Display */}
+                <div>
+                  <span className="text-[10px] uppercase font-mono tracking-wider text-[#D4AF37] block mb-3 font-semibold">
+                    {entries.length === 1 ? "LEADING PIONEER" : "TOP LEADING TRAJECTORIES"}
+                  </span>
 
-            {/* Remaining Ranked List */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] uppercase font-mono tracking-wider text-[#D4AF37] font-semibold">
-                  FULL STANDINGS ({entries.length} PARTICIPANTS)
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500">
-                  Updated in real-time
-                </span>
-              </div>
+                  <div
+                    className={
+                      entries.length === 1
+                        ? "max-w-md mx-auto"
+                        : entries.length === 2
+                        ? "grid grid-cols-1 sm:grid-cols-2 gap-3"
+                        : "grid grid-cols-1 sm:grid-cols-3 gap-3"
+                    }
+                  >
+                    {topThree.map((user, idx) => {
+                      const isFirst = idx === 0;
+                      const isSecond = idx === 1;
 
-              <div className="space-y-2">
-                {remainingEntries.map((user) => {
-                  const isCurrentUser = user.isCurrentUser;
-                  return (
-                    <div
-                      key={user.id}
-                      className={`p-3 sm:p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                        isCurrentUser
-                          ? "bg-gradient-to-r from-[#D4AF37]/15 via-[#101025] to-[#D4AF37]/10 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)] ring-1 ring-[#D4AF37]/50"
-                          : "bg-[#050510]/80 border-white/5 hover:border-white/15"
-                      }`}
-                    >
-                      {/* Left: Rank, Avatar, Details */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`w-7 text-center font-mono text-sm font-bold shrink-0 ${
-                            isCurrentUser ? "text-[#D4AF37]" : "text-zinc-400"
+                      const medalStyles = isFirst
+                        ? "border-[#D4AF37] bg-gradient-to-b from-[#D4AF37]/20 to-[#101025] shadow-[0_0_25px_rgba(212,175,55,0.25)]"
+                        : isSecond
+                        ? "border-slate-300/60 bg-gradient-to-b from-slate-300/15 to-[#101025] shadow-[0_0_20px_rgba(203,213,225,0.15)]"
+                        : "border-amber-600/60 bg-gradient-to-b from-amber-600/15 to-[#101025] shadow-[0_0_20px_rgba(217,119,6,0.15)]";
+
+                      const medalBadge = isFirst
+                        ? { icon: Crown, label: "#1", color: "text-[#D4AF37]", bg: "bg-[#D4AF37]/20 border-[#D4AF37]" }
+                        : isSecond
+                        ? { icon: Medal, label: "#2", color: "text-slate-200", bg: "bg-slate-300/20 border-slate-300" }
+                        : { icon: Award, label: "#3", color: "text-amber-400", bg: "bg-amber-600/20 border-amber-600" };
+
+                      const MedalIcon = medalBadge.icon;
+
+                      return (
+                        <motion.div
+                          key={user.id}
+                          whileHover={{ y: -3 }}
+                          className={`rounded-2xl p-4 border flex flex-col items-center text-center relative overflow-hidden transition-all ${medalStyles} ${
+                            user.isCurrentUser ? "ring-2 ring-[#D4AF37]" : ""
                           }`}
                         >
-                          #{user.rank}
-                        </span>
+                          {/* Rank Badge */}
+                          <div
+                            className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full border text-[10px] font-mono font-bold flex items-center gap-1 ${medalBadge.bg} ${medalBadge.color}`}
+                          >
+                            <MedalIcon className="w-3 h-3" />
+                            <span>{medalBadge.label}</span>
+                          </div>
 
-                        <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-[#101025] flex items-center justify-center">
-                          {user.avatarUrl ? (
-                            <img
-                              src={user.avatarUrl}
-                              alt={user.username}
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <span className="text-sm font-bold text-[#D4AF37]">
-                              {user.username.charAt(0)}
-                            </span>
-                          )}
-                        </div>
+                          {/* Avatar */}
+                          <div
+                            className={`w-14 h-14 rounded-2xl p-[2px] mt-1 shadow-lg ${
+                              isFirst
+                                ? "bg-gradient-to-tr from-[#D4AF37] to-[#FFF1C5]"
+                                : isSecond
+                                ? "bg-gradient-to-tr from-slate-200 to-slate-400"
+                                : "bg-gradient-to-tr from-amber-500 to-amber-700"
+                            }`}
+                          >
+                            <div className="w-full h-full rounded-[14px] bg-[#050510] overflow-hidden flex items-center justify-center">
+                              {user.avatarUrl ? (
+                                <img
+                                  src={user.avatarUrl}
+                                  alt={user.username}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <span className="text-xl font-bold font-serif-cresive text-[#D4AF37]">
+                                  {user.username.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
 
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className={`text-sm font-semibold truncate ${
-                                isCurrentUser ? "text-[#D4AF37]" : "text-white"
-                              }`}
-                            >
-                              {user.username}
-                            </span>
-                            {isCurrentUser && (
+                          {/* Username & Badge */}
+                          <h4 className="text-sm font-semibold text-white mt-2.5 truncate max-w-full flex items-center gap-1">
+                            <span>{user.username}</span>
+                            {user.isCurrentUser && (
                               <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37] text-black font-bold">
                                 YOU
                               </span>
                             )}
-                            {user.badge && (
-                              <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-300 font-light">
-                                {user.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-zinc-400 font-mono truncate">
-                            {user.country || "Global"} · {user.completedMoves} Moves · {user.dailyChallengesCount} Challenges · {user.achievementsCount} 🏆
-                          </p>
-                        </div>
-                      </div>
+                          </h4>
 
-                      {/* Right: Level & XP */}
-                      <div className="flex items-center gap-3 shrink-0 text-right">
-                        <div className="hidden sm:block">
-                          <span className="text-[10px] font-mono text-zinc-400 uppercase block">Level</span>
-                          <span className="text-xs font-mono font-bold text-zinc-200">Lvl {user.level}</span>
+                          <p className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                            {user.country || "Global"} · {user.chapter || "BUILDING"}
+                          </p>
+
+                          {/* XP & Stats */}
+                          <div className="mt-3 pt-2.5 border-t border-white/10 w-full flex items-center justify-around text-xs">
+                            <div>
+                              <span className="text-[9px] font-mono text-zinc-400 uppercase block">Level</span>
+                              <span className="font-mono font-bold text-white">Lvl {user.level}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] font-mono text-zinc-400 uppercase block">XP</span>
+                              <span className="font-mono font-bold text-[#D4AF37]">
+                                {filter === "weekly" ? user.weeklyXp : user.totalXp}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] font-mono text-zinc-400 uppercase block">Moves</span>
+                              <span className="font-mono font-bold text-zinc-200">{user.completedMoves}</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Ranked List Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] uppercase font-mono tracking-wider text-[#D4AF37] font-semibold">
+                      FULL STANDINGS ({entries.length} {entries.length === 1 ? "MEMBER" : "MEMBERS"})
+                    </span>
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      Real-time authenticated
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(entries.length > 3 ? remainingEntries : entries).map((user) => {
+                      const isCurrentUser = user.isCurrentUser;
+                      return (
+                        <div
+                          key={user.id}
+                          className={`p-3 sm:p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            isCurrentUser
+                              ? "bg-gradient-to-r from-[#D4AF37]/15 via-[#101025] to-[#D4AF37]/10 border-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)] ring-1 ring-[#D4AF37]/50"
+                              : "bg-[#050510]/80 border-white/5 hover:border-white/15"
+                          }`}
+                        >
+                          {/* Left: Rank, Avatar, Details */}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`w-7 text-center font-mono text-sm font-bold shrink-0 ${
+                                isCurrentUser ? "text-[#D4AF37]" : "text-zinc-400"
+                              }`}
+                            >
+                              #{user.rank}
+                            </span>
+
+                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-[#101025] flex items-center justify-center">
+                              {user.avatarUrl ? (
+                                <img
+                                  src={user.avatarUrl}
+                                  alt={user.username}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <span className="text-sm font-bold text-[#D4AF37]">
+                                  {user.username.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`text-sm font-semibold truncate ${
+                                    isCurrentUser ? "text-[#D4AF37]" : "text-white"
+                                  }`}
+                                >
+                                  {user.username}
+                                </span>
+                                {isCurrentUser && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37] text-black font-bold">
+                                    YOU
+                                  </span>
+                                )}
+                                {user.badge && (
+                                  <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-zinc-300 font-light">
+                                    {user.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-zinc-400 font-mono truncate">
+                                {user.country || "Global"} · {user.completedMoves} Moves · {user.dailyChallengesCount} Challenges · {user.achievementsCount} 🏆
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right: Level & XP */}
+                          <div className="flex items-center gap-3 shrink-0 text-right">
+                            <div className="hidden sm:block">
+                              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Level</span>
+                              <span className="text-xs font-mono font-bold text-zinc-200">Lvl {user.level}</span>
+                            </div>
+                            <div className="w-16 sm:w-20 text-right">
+                              <span className="text-[10px] font-mono text-zinc-400 uppercase block">
+                                {filter === "weekly" ? "Weekly" : "Total"} XP
+                              </span>
+                              <span className="text-sm font-mono font-bold text-[#D4AF37]">
+                                {(filter === "weekly" ? user.weeklyXp : user.totalXp).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="w-16 sm:w-20 text-right">
-                          <span className="text-[10px] font-mono text-zinc-400 uppercase block">
-                            {filter === "weekly" ? "Weekly" : "Total"} XP
-                          </span>
-                          <span className="text-sm font-mono font-bold text-[#D4AF37]">
-                            {(filter === "weekly" ? user.weeklyXp : user.totalXp).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* User's Position Sticky Bottom Bar */}

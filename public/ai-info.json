@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "CRESCIVE",
+  "version": "1.0.0",
+  "lastUpdated": "2026-09-26",
+  "documentType": "Authoritative AI & Machine-Readable Product Knowledge Source",
+  "description": "Public, structured, machine-readable product documentation for AI search engines, intelligent crawlers, and LLM reasoning systems to understand CRESCIVE without executing user-facing UI interactions or accessing private authentication boundaries.",
+
+  "identity": {
+    "productName": "CRESCIVE",
+    "tagline": "The app of becoming.",
+    "productType": "Personal Growth & Self-Development Platform",
+    "canonicalUrl": "https://crescive.ai.studio/",
+    "created": "2026",
+    "origin": "Malaba, Kenya",
+    "creatorAndFounder": "Brian Omuse",
+    "applicationCategory": ["SelfImprovementApplication", "ProductivityApplication", "SocialApplication"],
+    "supportedPlatforms": ["Web SPA", "Mobile Web", "Progressive Web App (PWA)", "Desktop Browser"],
+    "primaryLanguage": "English",
+    "corePhilosophy": "LEARN → GROW → CREATE → PROGRESS",
+    "trajectoryEquation": "Small Daily Actions → Habits → Consistency → Progress → Becoming",
+    "branding": {
+      "themeColor": "#050510",
+      "accentColor": "#D4AF37",
+      "visualStyle": "Elegant Obsidian & Celestial Gold"
+    }
+  },
+
+  "creator": {
+    "name": "Brian Omuse",
+    "role": "Creator & Founder",
+    "created": "2026",
+    "bio": "Brian Omuse is the creator and founder of CRESCIVE. A teenage creator and digital innovator from Malaba, Kenya, he founded CRESCIVE in 2026 to provide individuals worldwide with a structured personal growth and self-development platform.",
+    "origin": "Malaba, Kenya",
+    "attributionStatement": "CRESCIVE was created, developed, and founded in 2026 by Brian Omuse in Malaba, Kenya."
+  },
+
+  "purpose": {
+    "summary": "CRESCIVE is a personal growth and self-development platform designed to help people become who they strive to be through consistent daily action, deep focus, balanced life dimension mapping, intelligent navigation, and genuine social connection.",
+    "keyDistinctionFromHabitTrackers": "Unlike basic checklist or habit tracking apps that simply record binary yes/no streaks, CRESCIVE connects identity to trajectory. It links a user's core values, 5-year vision, and chosen life dimensions directly to discrete daily Moves, deep work focus sessions, intelligent navigation, real member connections, and playful recharge breaks."
+  },
+
+  "navigationStructure": {
+    "totalMainSections": 8,
+    "orderedSections": [
+      { "order": 1, "id": "home", "label": "Home", "icon": "Sparkles" },
+      { "order": 2, "id": "moves", "label": "Moves", "icon": "CheckSquare" },
+      { "order": 3, "id": "fun", "label": "Fun", "icon": "PartyPopper" },
+      { "order": 4, "id": "categories", "label": "15 Map", "icon": "Layers" },
+      { "order": 5, "id": "future", "label": "Future", "icon": "Compass" },
+      { "order": 6, "id": "navigator", "label": "Navigator", "icon": "Brain" },
+      { "order": 7, "id": "chat", "label": "Chat", "icon": "MessageSquare" },
+      { "order": 8, "id": "profile", "label": "Profile", "icon": "User" }
+    ]
+  },
+
+  "coreSections": {
+    "home": {
+      "name": "Home",
+      "purpose": "Daily dashboard providing an immediate, unified view of daily momentum, active moves, challenges, and global standing.",
+      "implementedFeatures": [
+        "Daily Momentum meter summarizing active execution state",
+        "Daily Challenge card with prompt, XP rewards, and streak tracking",
+        "Upcoming scheduled Moves with direct completion toggles",
+        "Quick Category Jump Links across life domains",
+        "Home Leaderboard preview showing verified rank and distance to next peer",
+        "Creator Story modal access ('Brian's Story')",
+        "Help & How to Use the App walkthrough guide access"
+      ]
+    },
+    "moves": {
+      "name": "Moves",
+      "purpose": "The core action engine of CRESCIVE where ambitions are translated into discrete, manageable actions.",
+      "implementedFeatures": [
+        "Creation of custom Moves with title, category domain, and notes",
+        "Time commitments (5 min, 10 min, 20 min, 30 min, 1 hour, 2+ hours)",
+        "Repeat schedules (None, Daily, Weekdays, Weekly)",
+        "Real-time scheduled alarms, sound chimes, and browser notifications",
+        "Active Reminder Alarm modal with snooze, time adjust, and start in sanctuary options",
+        "One-tap completion toggles granting verified +25 XP",
+        "Deep Work Sanctuary launch button for active Moves",
+        "Curated Move Ideas catalog across all life categories"
+      ]
+    },
+    "fun": {
+      "name": "Fun Zone",
+      "purpose": "A lighter, playful environment integrated directly into the growth journey to recharge mental energy without abandoning momentum.",
+      "implementedFeatures": [
+        "Interactive 3D mini-games including Cosmic Orbit and Precision Tap",
+        "Mental agility challenges: Memory Match, Reaction Speed Test, Quick Math Sprint, Word Scramble",
+        "Curated humor vault: Tech jokes, Student Life, Dad Jokes, Smart/Funny, Silly Jokes",
+        "Daily Creative Sparks, thought-provoking questions, and riddles",
+        "Playful XP earnings ensuring recharge periods still advance profile progress"
+      ]
+    },
+    "fifteenMap": {
+      "name": "15 Map (Life Dimensions)",
+      "purpose": "Comprehensive developmental map categorizing human potential across 15 balanced life domains.",
+      "implementedFeatures": [
+        "15 holistic dimensions: Personal Growth, Career & Ambition, Financial Freedom, Health & Vitality, Mindset & Mental Health, Relationships, Skills & Mastery, Creativity, Productivity & Habits, Digital Life, and related foundational spheres",
+        "Curated Move inspirations tailored to each specific dimension",
+        "Reflection prompts and self-assessment milestones per dimension",
+        "Visual visualizer showing balanced growth across dimensions"
+      ]
+    },
+    "future": {
+      "name": "Future",
+      "purpose": "Long-term vision architecture helping users clarify where they want to go and who they strive to become.",
+      "implementedFeatures": [
+        "5-Year Vision articulation and structured milestone planning",
+        "Becoming statement definition linking current identity to aspirational identity",
+        "Constraint mapping identifying real-world friction (time, resources, obligations)",
+        "'What If?' Scenario Simulator analyzing trade-offs, required skills, upside, and immediate first moves for hypothetical life choices"
+      ]
+    },
+    "navigator": {
+      "name": "Navigator",
+      "purpose": "Built-in intelligent guidance system assisting with app discovery, problem-solving, education, coding, and strategic planning.",
+      "implementedFeatures": [
+        "Interactive AI guidance grounded in CRESCIVE's philosophy (LEARN → GROW → CREATE → PROGRESS)",
+        "App-aware navigation routing users to relevant sections, games, or categories",
+        "Step-by-step educational explanations in STEM, coding, mathematics, and writing",
+        "Multimodal screenshot and image analysis assistance",
+        "Intelligent contextual fallback ensuring guidance remains available even during network disruptions"
+      ]
+    },
+    "chat": {
+      "name": "Chat",
+      "purpose": "Real-time social connection and mutual accountability for verified CRESCIVE members.",
+      "implementedFeatures": [
+        "Authoritative Firebase UID identity (strictly real users, zero mock accounts)",
+        "Seamless synchronization with the CRESCIVE Profile (profile picture and preferred name)",
+        "Real registered member directory with live Firestore listener and search",
+        "Real-time member presence indicator (Online Now / Active Member)",
+        "Architectural foundation for direct 1-to-1 conversations and growth circles",
+        "Strict Firestore security rules enforcing owner-only writes and authenticated-only reads"
+      ]
+    },
+    "profile": {
+      "name": "Profile",
+      "purpose": "Personal user hub displaying identity, statistics, earned achievements, settings, and privacy controls.",
+      "implementedFeatures": [
+        "Customizable preferred name and profile photo (upload or drag-and-drop)",
+        "Becoming statement and 5-year trajectory summary",
+        "Momentum statistics: Total XP, level, active streak, completed Moves count",
+        "Earned badges and achievement unlocks",
+        "Notification settings: chimes audio, device vibration, and timing triggers",
+        "Deep Work Sanctuary focus session logs and stats",
+        "Privacy, Permissions & Legal disclosure card with local-first data backup and export"
+      ]
+    }
+  },
+
+  "personalDevelopmentSystems": [
+    {
+      "name": "Moves Engine",
+      "description": "Translates goals into bite-sized, scheduled micro-actions with custom time commitments and reminders.",
+      "relationshipToPhilosophy": "Embodies the 'GROW' and 'PROGRESS' principles by making execution frictionless.",
+      "userFacing": true
+    },
+    {
+      "name": "Deep Work Sanctuary (Focus / Flow Mode)",
+      "description": "Distraction-free focus environment with customizable timers (15m, 25m Pomodoro, 45m, 60m), ambient chimes, and automatic move completion.",
+      "relationshipToPhilosophy": "Provides the sanctuary required for deep 'CREATE' and 'LEARN' phases.",
+      "userFacing": true
+    },
+    {
+      "name": "15 Life Dimensions Map",
+      "description": "Framework preventing one-dimensional burnout by balancing craft, health, relationships, mindset, and finance.",
+      "relationshipToPhilosophy": "Guides holistic human flourishing rather than narrow productivity.",
+      "userFacing": true
+    },
+    {
+      "name": "Daily Challenges",
+      "description": "Daily curated prompts encouraging comfort-zone expansion with bonus XP rewards.",
+      "relationshipToPhilosophy": "Maintains day-to-day momentum and exploratory growth.",
+      "userFacing": true
+    },
+    {
+      "name": "What If? Scenario Simulator",
+      "description": "Decision-support simulation analyzing upside, required skills, and constraints for potential life paths.",
+      "relationshipToPhilosophy": "Aligns strategic thinking with practical execution.",
+      "userFacing": true
+    },
+    {
+      "name": "Navigator Intelligent Assistant",
+      "description": "Built-in personal assistant for knowledge acquisition, coding help, and app navigation.",
+      "relationshipToPhilosophy": "Accelerates the 'LEARN' stage into actionable 'MOVES'.",
+      "userFacing": true
+    },
+    {
+      "name": "Reminder & Alarm Engine",
+      "description": "Audio chimes, haptic vibration, and browser notification alarms with snooze capability.",
+      "relationshipToPhilosophy": "Protects adherence to chosen routines and scheduled commitments.",
+      "userFacing": true
+    }
+  ],
+
+  "progressAndGamification": {
+    "xpSystem": {
+      "description": "Experience Points earned authentically through completing Moves (+25 XP), Daily Challenges, and mini-games.",
+      "monetaryValue": "None. XP is strictly an internal metric of consistency and effort.",
+      "antiCheat": "Server-side reconciliation verifies that XP matches recorded completions and prevents artificial inflation."
+    },
+    "streaks": {
+      "description": "Consecutive days with at least one completed Move or Daily Challenge.",
+      "purpose": "Encourages compound daily consistency."
+    },
+    "tiersAndLevels": {
+      "levelCalculation": "1 level per ~100-150 verified XP",
+      "tiers": [
+        "Seeker (Level 1-3)",
+        "Apprentice (Level 4-7)",
+        "Practitioner (Level 8-11)",
+        "Master (Level 12-15)",
+        "Ascended Master (Level 16+)"
+      ]
+    },
+    "leaderboards": {
+      "description": "Global and community leaderboards displaying verified rankings, levels, and badges.",
+      "privacyOptions": "Users can customize their leaderboard display name, toggle avatar visibility, or opt out entirely."
+    }
+  ],
+
+  "socialSystem": {
+    "overview": "CRESCIVE Chat provides a social communication layer specifically designed around growth, accountability, and member discovery.",
+    "principles": [
+      "Real users only: Authentication backed by authoritative Firebase UIDs; zero synthetic or mock accounts.",
+      "Unified identity: Automatically utilizes the user's existing CRESCIVE preferred name and profile picture.",
+      "Privacy-first: Public discovery displays member aspiration ('becoming') and online state; private messages are strictly access-controlled."
+    ],
+    "roadmapPhases": {
+      "quarter1": "Architecture, Cloud Firestore security rules, Firebase Auth integration, and Real Member Directory (Implemented)",
+      "quarter2": "1-on-1 direct conversations, connection requests, and member discovery (In Progress)",
+      "quarter3": "Real-time typing indicators, read receipts, and milestone celebration shares",
+      "quarter4": "Collaborative growth circles and synchronized Deep Work Sanctuary sessions"
+    }
+  },
+
+  "privacyAndPublicBoundaries": {
+    "publicInformation": [
+      "Product identity, philosophy, and documentation",
+      "Creator attribution (Brian Omuse)",
+      "Feature descriptions and architectural specifications",
+      "Public leaderboard opt-in entries (if user enabled opt-in)",
+      "Public member profile discovery (display name, avatar, becoming statement, online presence)"
+    ],
+    "protectedPrivateInformation": [
+      "User authentication tokens, passwords, and sessions",
+      "Firebase configuration secrets and backend credentials",
+      "Private 1-on-1 chat messages and direct conversation contents",
+      "Personal private notes attached to Moves",
+      "Individual 5-year vision details and private constraint notes",
+      "Firestore security rules internal evaluation trees",
+      "Client local storage raw database exports"
+    ],
+    "localFirstDesign": "CRESCIVE functions with local-first resilience, enabling offline usage with automatic synchronization upon reconnect."
+  },
+
+  "frequentlyAnsweredQuestions": [
+    {
+      "question": "What is CRESCIVE?",
+      "answer": "CRESCIVE is an integrated personal growth system and progress platform created by Brian Omuse. It combines daily micro-actions (Moves), 15 life dimensions, future vision planning, intelligent navigation, focus flow tools, and social chat to guide users from identity to trajectory."
+    },
+    {
+      "question": "Who created CRESCIVE?",
+      "answer": "CRESCIVE was created, developed, and founded by Brian Omuse, a teenage creator and digital innovator from Malaba, Kenya."
+    },
+    {
+      "question": "What is CRESCIVE's core philosophy?",
+      "answer": "CRESCIVE operates on the philosophy: LEARN → GROW → CREATE → PROGRESS. It is founded on the idea that small, consistent daily actions compound into habits, progress, and lasting personal becoming."
+    },
+    {
+      "question": "What are Moves in CRESCIVE?",
+      "answer": "Moves are small, discrete actions that help users grow. Users select or create a Move, assign a time commitment (5 to 120 minutes) and domain, schedule reminders, and complete it to earn XP and build momentum."
+    },
+    {
+      "question": "What is the 15 Map in CRESCIVE?",
+      "answer": "The 15 Map is a holistic developmental framework organizing personal growth across 15 balanced life domains (such as Physical Health, Mindset, Skills & Mastery, Creativity, Career, and Relationships) to prevent one-sided burnout."
+    },
+    {
+      "question": "Does CRESCIVE have social or chat features?",
+      "answer": "Yes. CRESCIVE contains a dedicated Chat section backed by real Firebase Authentication and Cloud Firestore, enabling verified members to discover fellow learners, view profiles, and connect for growth accountability."
+    },
+    {
+      "question": "Does CRESCIVE have mini-games?",
+      "answer": "Yes. The Fun Zone features interactive 3D games (Cosmic Orbit, Precision Tap) and mental agility games (Memory Match, Reaction Speed Test, Quick Math Sprint, Word Scramble) alongside clean jokes and riddles to provide productive recharge breaks."
+    },
+    {
+      "question": "Does CRESCIVE track progress and have leaderboards?",
+      "answer": "Yes. CRESCIVE includes an XP system, daily streaks, achievement badges, and a verified community leaderboard where members can compare consistency and progress."
+    },
+    {
+      "question": "What makes CRESCIVE different from a basic habit tracker?",
+      "answer": "CRESCIVE connects daily micro-habits to a person's deep values, 5-year vision, 15 life dimensions, deep work focus sanctuary, intelligent navigation, and real social accountability, rather than just offering a generic checklist."
+    }
+  ]
+}

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Trophy, ChevronRight, TrendingUp, Sparkles, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { Trophy, ChevronRight, TrendingUp } from "lucide-react";
 import { UserProfile, MoveItem, LeaderboardEntry } from "../../types";
 import {
   fetchLeaderboardData,
   calculateUserStats,
   LeaderboardResponse,
-  getLastSavedXp,
   saveLastXp,
   getLastSavedRank,
   saveLastRank,
@@ -25,7 +24,6 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
   onOpenLeaderboard,
 }) => {
   const [data, setData] = useState<LeaderboardResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [recentXpGained, setRecentXpGained] = useState<number | null>(null);
   const [rankChangeMsg, setRankChangeMsg] = useState<string | null>(null);
 
@@ -55,7 +53,6 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
     fetchLeaderboardData("global", userProfile, moves).then((res) => {
       if (!isMounted) return;
       setData(res);
-      setIsLoading(false);
 
       const oldRank = prevRankRef.current ?? getLastSavedRank();
       const newRank = res.userRank;
@@ -88,62 +85,13 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
     return () => window.removeEventListener(ACTIVE_TIME_EVENT, handleActiveTime);
   }, []);
 
-  const userRank = data?.userRank ?? (userStats.totalXp === 0 ? 500 : 24);
-  const totalParticipants = data?.totalParticipants ?? 500;
-  const xpToNext = data?.xpToNextRank ?? (userStats.totalXp === 0 ? 25 : 120);
-  const nextRankNumber = Math.max(1, (userRank || 2) - 1);
+  const userRank = data?.userRank ?? (data?.totalParticipants ? null : null);
+  const totalParticipants = data?.totalParticipants ?? 0;
+  const xpToNext = data?.xpToNextRank ?? 0;
+  const nextRankUser = data?.nextRankUsername;
 
-  // Top 3 peers
-  const topPeers: LeaderboardEntry[] = data?.entries && data.entries.length >= 3
-    ? data.entries.slice(0, 3)
-    : [
-        {
-          id: "peer-alex",
-          rank: 1,
-          username: "Alex",
-          level: 18,
-          totalXp: 12450,
-          weeklyXp: 480,
-          completedMoves: 142,
-          dailyChallengesCount: 76,
-          achievementsCount: 28,
-          chapter: "BUILDING",
-          country: "Global",
-          badge: "Legendary ⚡",
-          streakDays: 45,
-        },
-        {
-          id: "peer-jordan",
-          rank: 2,
-          username: "Jordan",
-          level: 17,
-          totalXp: 11980,
-          weeklyXp: 430,
-          completedMoves: 136,
-          dailyChallengesCount: 71,
-          achievementsCount: 26,
-          chapter: "BUILDING",
-          country: "Global",
-          badge: "Visionary 🚀",
-          streakDays: 39,
-        },
-        {
-          id: "peer-sam",
-          rank: 3,
-          username: "Sam",
-          level: 17,
-          totalXp: 11420,
-          weeklyXp: 410,
-          completedMoves: 128,
-          dailyChallengesCount: 68,
-          achievementsCount: 24,
-          chapter: "BUILDING",
-          country: "Global",
-          badge: "Mastermind 🎯",
-          streakDays: 34,
-        },
-      ];
-
+  // Real top peers from server/Firestore only (NO fake users)
+  const topPeers: LeaderboardEntry[] = data?.entries ? data.entries.slice(0, 3) : [];
   const medalEmojis = ["🥇", "🥈", "🥉"];
 
   return (
@@ -177,7 +125,7 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-zinc-400 font-light">
-              Healthy competition &amp; verified growth
+              Real community activity &amp; verified growth
             </p>
           </div>
         </div>
@@ -206,13 +154,15 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
                 Your Rank
               </span>
               <span className="text-[11px] text-zinc-400">
-                of {totalParticipants} global
+                {totalParticipants === 0
+                  ? "Community growing"
+                  : `of ${totalParticipants} ${totalParticipants === 1 ? "member" : "members"}`}
               </span>
             </div>
 
             <div className="flex items-baseline gap-3 my-1">
               <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#D4AF37] tracking-tight">
-                #{userRank}
+                {userRank ? `#${userRank}` : "#—"}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-base sm:text-lg font-mono font-bold text-white">
@@ -250,43 +200,61 @@ export const HomeLeaderboardCard: React.FC<HomeLeaderboardCardProps> = ({
 
           {/* Next-Rank Motivation */}
           <div className="mt-3 pt-2.5 border-t border-white/10 text-xs font-mono flex items-center justify-between text-zinc-300">
-            <span className="flex items-center gap-1 text-[#F5D77F]">
-              <span className="text-base">⬆️</span>
-              <span className="font-semibold">{xpToNext} XP</span>
-              <span className="text-zinc-400">to #{nextRankNumber}</span>
-            </span>
-            <span className="text-[11px] text-zinc-400 italic">
-              Keep moving forward 🚀
-            </span>
+            {xpToNext > 0 && nextRankUser ? (
+              <span className="flex items-center gap-1 text-[#F5D77F]">
+                <span className="text-base">⬆️</span>
+                <span className="font-semibold">{xpToNext} XP</span>
+                <span className="text-zinc-400">to pass {nextRankUser}</span>
+              </span>
+            ) : (
+              <span className="text-zinc-400 text-[11px] italic">
+                {userRank === 1 ? "You are currently #1 leading the board! 🚀" : "Keep moving forward 🚀"}
+              </span>
+            )}
+            <span className="text-[11px] text-zinc-500">Every Move counts</span>
           </div>
         </div>
 
-        {/* Top 3 Section */}
+        {/* Top Peers Section */}
         <div className="p-4 rounded-xl bg-[#070714]/90 border border-white/10 flex flex-col justify-between">
           <div>
             <div className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-semibold mb-2 flex items-center justify-between">
-              <span>Top 3</span>
-              <span className="text-[10px] text-zinc-400">Community Leaders</span>
+              <span>{topPeers.length === 1 ? "Leading Member" : "Top Members"}</span>
+              <span className="text-[10px] text-zinc-400">Real Authenticated</span>
             </div>
 
-            <div className="space-y-2">
-              {topPeers.slice(0, 3).map((peer, idx) => (
-                <div
-                  key={peer.id || idx}
-                  className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/[0.03] border border-white/5 text-xs font-mono"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm shrink-0">{medalEmojis[idx]}</span>
-                    <span className="font-bold text-white truncate max-w-[120px] sm:max-w-[140px]">
-                      {peer.username}
+            {topPeers.length > 0 ? (
+              <div className="space-y-2">
+                {topPeers.map((peer, idx) => (
+                  <div
+                    key={peer.id || idx}
+                    className="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/[0.03] border border-white/5 text-xs font-mono"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm shrink-0">{medalEmojis[idx] || `#${idx + 1}`}</span>
+                      <span className="font-bold text-white truncate max-w-[120px] sm:max-w-[140px]">
+                        {peer.username}
+                        {peer.isCurrentUser && (
+                          <span className="ml-1 text-[9px] px-1 py-0.2 rounded bg-[#D4AF37] text-black font-bold">
+                            YOU
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[#D4AF37] font-semibold shrink-0">
+                      {peer.totalXp.toLocaleString()} XP
                     </span>
                   </div>
-                  <span className="text-[#D4AF37] font-semibold shrink-0">
-                    {peer.totalXp.toLocaleString()} XP
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-5 px-3 text-center flex flex-col items-center justify-center">
+                <p className="text-xs text-zinc-300 font-light mb-0.5">You&apos;re early.</p>
+                <p className="text-[10px] text-zinc-500 font-mono">
+                  Real users will appear here as they join.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Bottom Card Action */}

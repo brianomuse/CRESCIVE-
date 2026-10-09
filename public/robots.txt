@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Allow: /ai-info.json
 
 Sitemap: https://crescive.ai.studio/sitemap.xml
+# Authoritative AI & Machine-Readable Product Information:
+# https://crescive.ai.studio/ai-info.json

@@ -1,9 +1,13 @@
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { initializeApp as initAdminApp, getApps as getAdminApps } from "firebase-admin/app";
+import { getMessaging as getAdminMessaging } from "firebase-admin/messaging";
+import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 
 dotenv.config();
 
@@ -34,6 +38,313 @@ function getAIClient(): GoogleGenAI | null {
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", app: "CRESCIVE" });
 });
+
+// Authoritative Public AI & Machine-Readable Product Knowledge Endpoint
+app.get("/ai-info.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  const aiInfoPath = path.join(process.cwd(), "public", "ai-info.json");
+  res.sendFile(aiInfoPath);
+});
+
+// ==================== FIREBASE ADMIN & PRODUCTION NOTIFICATIONS ====================
+let adminApp: any = null;
+let adminMessaging: any = null;
+let adminFirestore: any = null;
+
+try {
+  if (getAdminApps().length === 0) {
+    adminApp = initAdminApp({
+      projectId: "gen-lang-client-0208031043",
+    });
+  } else {
+    adminApp = getAdminApps()[0];
+  }
+  adminMessaging = getAdminMessaging(adminApp);
+  adminFirestore = getAdminFirestore(adminApp);
+  console.log("Firebase Admin initialized successfully for project gen-lang-client-0208031043");
+} catch (err: any) {
+  console.warn("Firebase Admin initialization note:", err?.message || err);
+}
+
+// In-memory persistent caches for server-driven notifications
+const registeredFcmTokens = new Map<string, Set<string>>(); // uid -> Set of tokens
+const userNotificationPrefs = new Map<string, { chatMessages: boolean; moveReminders: boolean; cresciveUpdates: boolean }>();
+const activeMoveReminders = new Map<string, any>(); // reminderId -> MoveReminderItem
+
+// Register FCM Push Token
+app.post("/api/notifications/register-token", async (req, res) => {
+  try {
+    const { uid, token, userAgent } = req.body;
+    if (!uid || !token) {
+      return res.status(400).json({ error: "uid and token are required" });
+    }
+
+    if (!registeredFcmTokens.has(uid)) {
+      registeredFcmTokens.set(uid, new Set());
+    }
+    registeredFcmTokens.get(uid)!.add(token);
+
+    if (adminFirestore) {
+      try {
+        const tokenDoc = adminFirestore.collection("users").doc(uid).collection("notifications").doc("fcm_tokens");
+        const docSnap = await tokenDoc.get();
+        const existingTokens: string[] = docSnap.exists ? docSnap.data()?.tokens || [] : [];
+        if (!existingTokens.includes(token)) {
+          existingTokens.push(token);
+          await tokenDoc.set(
+            {
+              tokens: existingTokens,
+              activeToken: token,
+              updatedAt: new Date().toISOString(),
+              userAgent: userAgent || "web",
+            },
+            { merge: true }
+          );
+        }
+      } catch (fErr) {
+        console.warn("Firestore token sync warning:", fErr);
+      }
+    }
+
+    return res.json({ success: true, count: registeredFcmTokens.get(uid)!.size });
+  } catch (err: any) {
+    console.error("Error in /api/notifications/register-token:", err);
+    res.status(500).json({ error: "Failed to register token" });
+  }
+});
+
+// Unregister FCM Push Token
+app.post("/api/notifications/unregister-token", (req, res) => {
+  try {
+    const { uid, token } = req.body;
+    if (uid && token && registeredFcmTokens.has(uid)) {
+      registeredFcmTokens.get(uid)!.delete(token);
+    }
+    return res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to unregister token" });
+  }
+});
+
+// Notification Preferences
+app.post("/api/notifications/preferences", (req, res) => {
+  try {
+    const { uid, preferences } = req.body;
+    if (uid && preferences) {
+      userNotificationPrefs.set(uid, preferences);
+    }
+    return res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to update preferences" });
+  }
+});
+
+// Send Chat Message Push Notification to Recipient
+app.post("/api/notifications/send-chat", async (req, res) => {
+  try {
+    const { senderUid, senderName, senderAvatar, recipientUid, conversationId } = req.body;
+
+    if (!senderUid || !recipientUid || !conversationId) {
+      return res.status(400).json({ error: "senderUid, recipientUid, and conversationId are required" });
+    }
+
+    // Never notify sender themselves
+    if (senderUid === recipientUid) {
+      return res.json({ skipped: true, reason: "Sender is recipient" });
+    }
+
+    // Check recipient's preferences
+    const prefs = userNotificationPrefs.get(recipientUid);
+    if (prefs && prefs.chatMessages === false) {
+      return res.json({ skipped: true, reason: "Recipient has muted chat notifications" });
+    }
+
+    // Collect recipient tokens
+    const tokens = new Set<string>();
+    if (registeredFcmTokens.has(recipientUid)) {
+      for (const t of registeredFcmTokens.get(recipientUid)!) {
+        tokens.add(t);
+      }
+    }
+
+    // Also look up from Firestore if available
+    if (adminFirestore) {
+      try {
+        const tokenDoc = await adminFirestore.collection("users").doc(recipientUid).collection("notifications").doc("fcm_tokens").get();
+        if (tokenDoc.exists) {
+          const list: string[] = tokenDoc.data()?.tokens || [];
+          list.forEach((t: string) => tokens.add(t));
+        }
+      } catch (fErr) {
+        console.warn("Could not query recipient tokens from Firestore:", fErr);
+      }
+    }
+
+    const tokenArray = Array.from(tokens);
+    const title = `${senderName || "A member"} sent you a message`;
+    const body = "New message in CRESCIVE Chat";
+    const icon = senderAvatar || "/crescive_logo.png";
+    const clickUrl = `/?tab=chat&convo=${encodeURIComponent(conversationId)}&sender=${encodeURIComponent(senderUid)}`;
+
+    if (tokenArray.length > 0 && adminMessaging) {
+      try {
+        const response = await adminMessaging.sendEachForMulticast({
+          tokens: tokenArray,
+          notification: {
+            title,
+            body,
+          },
+          data: {
+            type: "chat",
+            conversationId,
+            senderId: senderUid,
+            title,
+            body,
+            icon,
+            url: clickUrl,
+          },
+          webpush: {
+            notification: {
+              icon,
+              badge: "/crescive_logo.png",
+              tag: `chat-${conversationId}`,
+            },
+            fcmOptions: {
+              link: clickUrl,
+            },
+          },
+        });
+        console.log(`[Push] Chat notification sent to ${tokenArray.length} device(s). Success: ${response.successCount}`);
+        return res.json({ success: true, sentCount: response.successCount });
+      } catch (pushErr: any) {
+        console.warn("[Push] FCM send error:", pushErr?.message);
+      }
+    }
+
+    return res.json({ success: true, sentCount: 0, notice: "Notification processed" });
+  } catch (err: any) {
+    console.error("Error in /api/notifications/send-chat:", err);
+    res.status(500).json({ error: "Failed to dispatch chat push notification" });
+  }
+});
+
+// Schedule Move Reminder
+app.post("/api/notifications/move-reminder/schedule", (req, res) => {
+  try {
+    const { reminder } = req.body;
+    if (!reminder || !reminder.id) {
+      return res.status(400).json({ error: "Valid reminder object required" });
+    }
+    activeMoveReminders.set(reminder.id, reminder);
+    return res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to schedule reminder" });
+  }
+});
+
+// Delete Move Reminder
+app.post("/api/notifications/move-reminder/delete", (req, res) => {
+  try {
+    const { id } = req.body;
+    if (id) {
+      activeMoveReminders.delete(id);
+    }
+    return res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: "Failed to delete reminder" });
+  }
+});
+
+// Move Reminder Notification Dispatcher
+async function checkAndDispatchDueReminders() {
+  if (activeMoveReminders.size === 0) return;
+
+  const now = new Date();
+  const currentHours = String(now.getHours()).padStart(2, "0");
+  const currentMinutes = String(now.getMinutes()).padStart(2, "0");
+  const currentTimeStr = `${currentHours}:${currentMinutes}`;
+  const todayDateStr = now.toISOString().split("T")[0];
+  const dayOfWeek = now.getDay(); // 0 is Sunday, 6 is Saturday
+
+  for (const [id, reminder] of activeMoveReminders.entries()) {
+    if (!reminder.enabled) continue;
+    if (reminder.lastNotifiedDate === todayDateStr) continue;
+
+    // Check repeat condition
+    if (reminder.repeatSchedule === "weekdays" && (dayOfWeek === 0 || dayOfWeek === 6)) {
+      continue;
+    }
+
+    // Compare scheduled time
+    if (reminder.scheduledTime === currentTimeStr) {
+      reminder.lastNotifiedDate = todayDateStr;
+
+      const uid = reminder.userId;
+      const prefs = userNotificationPrefs.get(uid);
+      if (prefs && prefs.moveReminders === false) continue;
+
+      const tokens = new Set<string>();
+      if (registeredFcmTokens.has(uid)) {
+        registeredFcmTokens.get(uid)!.forEach((t) => tokens.add(t));
+      }
+
+      if (adminFirestore) {
+        try {
+          const tokenDoc = await adminFirestore.collection("users").doc(uid).collection("notifications").doc("fcm_tokens").get();
+          if (tokenDoc.exists) {
+            (tokenDoc.data()?.tokens || []).forEach((t: string) => tokens.add(t));
+          }
+        } catch {}
+      }
+
+      const tokenArray = Array.from(tokens);
+      const title = "Time for your Daily Move";
+      const body = reminder.moveTitle
+        ? `Scheduled move: "${reminder.moveTitle}". Tap to begin.`
+        : "Your future is in progress. Complete your daily move.";
+      const clickUrl = `/?tab=moves${reminder.moveId ? `&moveId=${encodeURIComponent(reminder.moveId)}` : ""}`;
+
+      if (tokenArray.length > 0 && adminMessaging) {
+        try {
+          await adminMessaging.sendEachForMulticast({
+            tokens: tokenArray,
+            notification: { title, body },
+            data: {
+              type: "move_reminder",
+              moveId: reminder.moveId || "",
+              title,
+              body,
+              url: clickUrl,
+            },
+            webpush: {
+              notification: {
+                icon: "/crescive_logo.png",
+                badge: "/crescive_logo.png",
+                tag: `move-reminder-${reminder.id}`,
+              },
+              fcmOptions: { link: clickUrl },
+            },
+          });
+          console.log(`[Push] Move reminder dispatched for "${reminder.moveTitle}" to ${tokenArray.length} devices.`);
+        } catch (pushErr: any) {
+          console.warn("[Push] Move reminder FCM send error:", pushErr?.message);
+        }
+      }
+
+      // If 'once', disable after triggering
+      if (reminder.repeatSchedule === "once") {
+        reminder.enabled = false;
+      }
+    }
+  }
+}
+
+// Background scheduler interval (checks every 30 seconds)
+setInterval(() => {
+  checkAndDispatchDueReminders().catch((e) => console.warn("Reminder check error:", e));
+}, 30000);
 
 // CRESCIVE Navigator API
 app.post("/api/navigator", async (req, res) => {
@@ -144,7 +455,18 @@ ACCURATE INVENTORY OF THE CURRENT APP:
 - "Future" tab (icon: Clock): 5-Year Vision, Horizon milestone planning, and the "What If?" Scenario Simulator tool.
 - "Profile" tab (icon: User): User's profile details (Preferred Name, Age, Chapter, Becoming vision, What Matters / Constellation values, Constraints, Available daily time), Momentum stats, and reminder notification controls.
 
-4. CRESCIVE CONNECTION
+4. CRESCIVE OFFICIAL ENTITY & FOUNDER FACTS
+- Name: CRESCIVE
+- Tagline: "The app of becoming."
+- Purpose: A personal growth and self-development platform
+- Creator & Founder: Brian Omuse
+- Created: 2026
+- Origin: Malaba, Kenya
+- Official website: https://crescive.ai.studio/
+
+When asked about CRESCIVE or its creator, provide these exact authoritative first-party facts:
+Brian Omuse is the creator and founder of CRESCIVE, founded in 2026 from Malaba, Kenya. CRESCIVE is "The app of becoming" — a personal growth and self-development platform designed to help people translate aspirations into daily discrete Moves, compound habits, and purposeful progress across 15 life dimensions.
+
 Support the overall philosophy of CRESCIVE:
 LEARN → GROW → CREATE → PROGRESS
 
@@ -414,124 +736,7 @@ Keep it realistic, grounded, and empowering. Avoid generic fluff. Return clear, 
   }
 });
 
-// ==================== GLOBAL LEADERBOARD SYSTEM ====================
-interface ServerLeaderboardPeer {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  level: number;
-  totalXp: number;
-  weeklyXp: number;
-  completedMoves: number;
-  dailyChallengesCount: number;
-  achievementsCount: number;
-  chapter: string;
-  country: string;
-  badge: string;
-  streakDays: number;
-  isFriend?: boolean;
-}
-
-const BASE_PEER_NAMES = [
-  { name: "Alex", xp: 12450, weekly: 480, moves: 142, challenges: 76, achievements: 28, chapter: "BUILDING", country: "🇬🇧 UK", badge: "Legendary ⚡", streak: 45, level: 18 },
-  { name: "Jordan", xp: 11980, weekly: 430, moves: 136, challenges: 71, achievements: 26, chapter: "BUILDING", country: "🇨🇦 Canada", badge: "Visionary 🚀", streak: 39, level: 17 },
-  { name: "Sam", xp: 11420, weekly: 410, moves: 128, challenges: 68, achievements: 24, chapter: "BUILDING", country: "🇦🇺 Australia", badge: "Mastermind 🎯", streak: 34, level: 17 },
-  { name: "Marcus Thorne", xp: 10850, weekly: 390, moves: 120, challenges: 64, achievements: 23, chapter: "BUILDING", country: "🇬🇧 UK", badge: "Pioneer 🚀", streak: 35, level: 16 },
-  { name: "Maya Lin", xp: 10200, weekly: 370, moves: 112, challenges: 60, achievements: 21, chapter: "BUILDING", country: "🇺🇸 USA", badge: "Architect 🏛️", streak: 32, level: 15 },
-  { name: "Daiki Tanaka", xp: 9650, weekly: 350, moves: 105, challenges: 56, achievements: 20, chapter: "LEARNING", country: "🇯🇵 Japan", badge: "Focus Prodigy 🔥", streak: 28, isFriend: true, level: 15 },
-  { name: "Amina Mwangi", xp: 9100, weekly: 330, moves: 98, challenges: 52, achievements: 19, chapter: "EXPLORING", country: "🇰🇪 Kenya", badge: "Pathfinder 🧭", streak: 26, isFriend: true, level: 14 },
-  { name: "Lucas Silva", xp: 8600, weekly: 310, moves: 92, challenges: 48, achievements: 18, chapter: "BUILDING", country: "🇧🇷 Brazil", badge: "3D Maestro ⚡", streak: 24, level: 14 },
-  { name: "Elena Rostova", xp: 8150, weekly: 290, moves: 86, challenges: 45, achievements: 17, chapter: "LEARNING", country: "🇩🇪 Germany", badge: "Deep Thinker 🧠", streak: 22, level: 13 },
-  { name: "Tariq Al-Mansoor", xp: 7700, weekly: 270, moves: 80, challenges: 42, achievements: 16, chapter: "WORKING", country: "🇦🇪 UAE", badge: "Sovereign Mind", streak: 20, isFriend: true, level: 13 },
-  { name: "Chloé Dubois", xp: 7300, weekly: 250, moves: 75, challenges: 39, achievements: 15, chapter: "TRANSITIONING", country: "🇫🇷 France", badge: "Philosopher 📖", streak: 18, level: 12 },
-  { name: "Kwame Mensah", xp: 6950, weekly: 230, moves: 70, challenges: 36, achievements: 14, chapter: "BUILDING", country: "🇬🇭 Ghana", badge: "Catalyst 🌱", streak: 16, level: 12 },
-  { name: "Sophia Martinez", xp: 6650, weekly: 210, moves: 66, challenges: 34, achievements: 13, chapter: "EXPLORING", country: "🇲🇽 Mexico", badge: "Voyager ⛵", streak: 15, level: 11 },
-  { name: "Liam Vance", xp: 6580, weekly: 205, moves: 64, challenges: 33, achievements: 13, chapter: "LEARNING", country: "🇮🇪 Ireland", badge: "Scholar 📜", streak: 14, level: 11 },
-  { name: "Isabella Rossi", xp: 6520, weekly: 200, moves: 63, challenges: 32, achievements: 12, chapter: "BUILDING", country: "🇮🇹 Italy", badge: "Craftsman ⚒️", streak: 14, level: 11 },
-  { name: "Chen Wei", xp: 6480, weekly: 198, moves: 62, challenges: 31, achievements: 12, chapter: "LEARNING", country: "🇨🇳 China", badge: "Innovator 💡", streak: 13, level: 11 },
-  { name: "Oliver Smith", xp: 6450, weekly: 196, moves: 61, challenges: 30, achievements: 12, chapter: "WORKING", country: "🇬🇧 UK", badge: "Steady Mover", streak: 13, level: 11 },
-  { name: "Amara Okafor", xp: 6420, weekly: 194, moves: 60, challenges: 29, achievements: 11, chapter: "BUILDING", country: "🇳🇬 Nigeria", badge: "Builder 🏗️", streak: 12, level: 11 },
-  { name: "Noah Davis", xp: 6400, weekly: 192, moves: 59, challenges: 28, achievements: 11, chapter: "LEARNING", country: "🇺🇸 USA", badge: "Explorer 🌟", streak: 12, level: 11 },
-  { name: "Emma Wilson", xp: 6380, weekly: 190, moves: 58, challenges: 27, achievements: 11, chapter: "EXPLORING", country: "🇳🇿 NZ", badge: "Curious Soul", streak: 11, level: 11 },
-  { name: "Lars Jensen", xp: 6370, weekly: 188, moves: 57, challenges: 26, achievements: 11, chapter: "BUILDING", country: "🇩🇰 Denmark", badge: "Nordic Grit", streak: 11, level: 11 },
-  { name: "Priya Sharma", xp: 6365, weekly: 186, moves: 56, challenges: 25, achievements: 10, chapter: "LEARNING", country: "🇮🇳 India", badge: "Algorithmic ✨", streak: 10, level: 11 },
-  // Peer at rank 23: 6,360 XP (giving exact 120 XP distance to 6,240 XP user!)
-  { name: "Aaron Kim", xp: 6360, weekly: 185, moves: 55, challenges: 25, achievements: 10, chapter: "LEARNING", country: "🇰🇷 South Korea", badge: "Rising Star ⭐", streak: 10, isFriend: true, level: 11 },
-  // Peer at rank 24 before user:
-  { name: "Zara Patel", xp: 6120, weekly: 170, moves: 52, challenges: 23, achievements: 9, chapter: "BUILDING", country: "🇬🇧 UK", badge: "Compounding 📈", streak: 9, isFriend: true, level: 10 },
-  { name: "Mateo Gomez", xp: 5850, weekly: 160, moves: 48, challenges: 21, achievements: 9, chapter: "WORKING", country: "🇲🇽 Mexico", badge: "Consistent 🔨", streak: 9, level: 10 },
-  { name: "Freja Lindqvist", xp: 5500, weekly: 150, moves: 45, challenges: 19, achievements: 8, chapter: "BUILDING", country: "🇸🇪 Sweden", badge: "Apprentice 🎨", streak: 8, level: 9 },
-  { name: "Joshua Ndung'u", xp: 5200, weekly: 140, moves: 42, challenges: 18, achievements: 8, chapter: "LEARNING", country: "🇰🇪 Kenya", badge: "Day One 🌱", streak: 8, isFriend: true, level: 9 },
-];
-
-// Generate comprehensive community peers up to 499 participants
-const GLOBAL_LEADERBOARD_PEERS: ServerLeaderboardPeer[] = (() => {
-  const list: ServerLeaderboardPeer[] = [];
-  
-  // First add named top peers
-  BASE_PEER_NAMES.forEach((p, idx) => {
-    list.push({
-      id: `peer-${idx}-${p.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
-      username: p.name,
-      avatarUrl: undefined,
-      level: p.level,
-      totalXp: p.xp,
-      weeklyXp: p.weekly,
-      completedMoves: p.moves,
-      dailyChallengesCount: p.challenges,
-      achievementsCount: p.achievements,
-      chapter: p.chapter,
-      country: p.country,
-      badge: p.badge,
-      streakDays: p.streak,
-      isFriend: p.isFriend || false,
-    });
-  });
-
-  const firstNames = ["Liam", "Olivia", "Noah", "Emma", "Leo", "Mia", "Arthur", "Chloe", "Kai", "Sora", "Elena", "Lucas", "Maya", "Zane", "Fatima", "Carlos", "Yuki", "Kofi", "Tara", "Ravi"];
-  const lastNames = ["Chen", "Müller", "Tanaka", "Silva", "Kowalski", "Dupont", "O'Connor", "Kim", "Diallo", "Santos", "Novak", "Hansen", "Berg", "Rossi", "Patel", "Ali", "Okafor", "Ivanov", "Morales", "Park"];
-  const countries = ["🇺🇸 USA", "🇬🇧 UK", "🇰🇪 Kenya", "🇯🇵 Japan", "🇩🇪 Germany", "🇧🇷 Brazil", "🇮🇳 India", "🇨🇦 Canada", "🇳🇬 Nigeria", "🇦🇺 Australia", "🇫🇷 France", "🇿🇦 South Africa"];
-  const chapters = ["LEARNING", "BUILDING", "WORKING", "EXPLORING", "TRANSITIONING"];
-
-  // Procedurally fill up to 499 total peers with declining XP down to 0
-  const remaining = 499 - list.length;
-  for (let i = 0; i < remaining; i++) {
-    const fn = firstNames[i % firstNames.length];
-    const ln = lastNames[Math.floor(i / firstNames.length) % lastNames.length];
-    const country = countries[i % countries.length];
-    const chapter = chapters[i % chapters.length];
-    
-    // Gradual curve down to 0 XP
-    const progressFactor = i / remaining;
-    // XP drops from ~4,900 down to 0
-    const totalXp = Math.max(0, Math.round(4900 * Math.pow(1 - progressFactor, 2.2)));
-    const weeklyXp = Math.max(0, Math.round(totalXp * 0.15));
-    const completedMoves = Math.max(0, Math.round(totalXp / 35));
-    const dailyChallengesCount = Math.max(0, Math.round(totalXp / 50));
-    const achievementsCount = Math.max(0, Math.min(10, Math.round(totalXp / 400)));
-    const level = totalXp > 0 ? Math.max(1, Math.floor(totalXp / 450) + 1) : 0;
-    const streakDays = totalXp > 100 ? Math.max(1, Math.min(14, Math.floor(totalXp / 300))) : 0;
-
-    list.push({
-      id: `peer-community-${i + 1}`,
-      username: `${fn} ${ln}`,
-      level,
-      totalXp,
-      weeklyXp,
-      completedMoves,
-      dailyChallengesCount,
-      achievementsCount,
-      chapter,
-      country,
-      badge: totalXp > 2000 ? "Consistent 🚀" : totalXp > 500 ? "Active Mover" : "Rising Explorer 🌱",
-      streakDays,
-      isFriend: i % 15 === 0,
-    });
-  }
-
-  return list;
-})();
-
+// ==================== GLOBAL LEADERBOARD VERIFICATION ====================
 // Anti-cheat XP verification engine
 function validateAndReconcileXp(
   reportedXp: number,
@@ -567,18 +772,19 @@ function validateAndReconcileXp(
   return { verifiedXp, isFlagged, level };
 }
 
-// Endpoint: Fetch validated global leaderboard
+// Endpoint: Validate user XP for real leaderboard
 app.post("/api/leaderboard", (req, res) => {
   try {
     const {
-      filter = "global", // "global" | "weekly" | "friends" | "all-time"
+      filter = "global",
       userProfile,
       moves = [],
       dailyState,
       gameStats,
       funZoneState,
       privacySettings = { optIn: true, displayName: "", showAvatar: true, showChapter: true },
-      reportedWeeklyXp = 0
+      reportedWeeklyXp = 0,
+      realFirestoreUsers = [] // Genuine authenticated users passed from Firestore
     } = req.body;
 
     const completedMoves = Array.isArray(moves) ? moves.filter((m: any) => m.completed).length : 0;
@@ -604,7 +810,7 @@ app.post("/api/leaderboard", (req, res) => {
       ? userProfile.chapter[0] 
       : "EXPLORING";
 
-    // Current user entry
+    // Current user genuine entry
     const userActiveLevel = req.body.activeLevel !== undefined ? Number(req.body.activeLevel) : (verifiedXp > 0 ? level : 0);
     const currentUserEntry = {
       id: "current-user",
@@ -624,31 +830,36 @@ app.post("/api/leaderboard", (req, res) => {
       isFriend: false,
     };
 
-    // Filter peers (explicitly exclude creator from leaderboard)
-    let activePeers = GLOBAL_LEADERBOARD_PEERS.filter(
-      (p) =>
-        !p.username.toLowerCase().includes("creator") &&
-        !p.username.toLowerCase().includes("brian omuse")
-    );
-    if (filter === "friends") {
-      activePeers = activePeers.filter((p) => p.isFriend);
+    // Combine ONLY real genuine users from Firestore (NO fake/demo peers)
+    let combinedEntries: any[] = [];
+    if (Array.isArray(realFirestoreUsers)) {
+      combinedEntries = realFirestoreUsers.filter((u: any) => u && u.username);
     }
 
-    // Include current user if optIn is true
-    let combinedEntries: any[] = [...activePeers];
+    // Add current user if opted in and not already present
     if (privacySettings.optIn !== false) {
-      combinedEntries.push(currentUserEntry);
+      const existingIdx = combinedEntries.findIndex(
+        (u) => u.isCurrentUser || (userProfile?.uid && u.id === userProfile.uid)
+      );
+      if (existingIdx >= 0) {
+        combinedEntries[existingIdx] = { ...combinedEntries[existingIdx], ...currentUserEntry };
+      } else {
+        combinedEntries.push(currentUserEntry);
+      }
     }
 
     // Sort by appropriate field with deterministic tie-breaker
     combinedEntries.sort((a, b) => {
       const field = filter === "weekly" ? "weeklyXp" : "totalXp";
-      if (b[field] !== a[field]) return b[field] - a[field];
-      if (b.completedMoves !== a.completedMoves) return b.completedMoves - a.completedMoves;
-      if (b.achievementsCount !== a.achievementsCount) return b.achievementsCount - a.achievementsCount;
-      // Consistent tie-breaker: brand new current user with 0 XP / 0 activity is placed at bottom
-      if (a.isCurrentUser && !b.isCurrentUser) return 1;
-      if (b.isCurrentUser && !a.isCurrentUser) return -1;
+      const aVal = Number(a[field]) || 0;
+      const bVal = Number(b[field]) || 0;
+      if (bVal !== aVal) return bVal - aVal;
+      const bMoves = Number(b.completedMoves) || 0;
+      const aMoves = Number(a.completedMoves) || 0;
+      if (bMoves !== aMoves) return bMoves - aMoves;
+      const bAch = Number(b.achievementsCount) || 0;
+      const aAch = Number(a.achievementsCount) || 0;
+      if (bAch !== aAch) return bAch - aAch;
       return 0;
     });
 
@@ -669,7 +880,7 @@ app.post("/api/leaderboard", (req, res) => {
       const ahead = rankedList[userIndex - 1];
       const targetField = filter === "weekly" ? "weeklyXp" : "totalXp";
       const currentField = filter === "weekly" ? currentUserEntry.weeklyXp : currentUserEntry.totalXp;
-      xpToNextRank = Math.max(1, (ahead[targetField] - currentField));
+      xpToNextRank = Math.max(1, ((Number(ahead[targetField]) || 0) - currentField));
       nextRankUsername = ahead.username;
     }
 
@@ -728,9 +939,8 @@ async function startServer() {
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
-        hmr: {
-          server: httpServer,
-        },
+        allowedHosts: true,
+        hmr: false,
       },
       appType: "spa",
     });

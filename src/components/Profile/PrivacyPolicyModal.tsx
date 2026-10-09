@@ -229,7 +229,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
                 CRESCIVE Terms of Service & Guiding Principles
               </h4>
               <p>
-                CRESCIVE is an interactive personal development system created by Brian Omuse (Malaba, Kenya) designed to support intentional action, habit compounding, and personal exploration.
+                CRESCIVE is a personal growth and self-development platform created and founded in 2026 by Brian Omuse in Malaba, Kenya (&ldquo;The app of becoming&rdquo;), designed to support intentional action, habit compounding, and personal trajectory exploration.
               </p>
 
               <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] space-y-1">
@@ -333,7 +333,7 @@ export const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({
 
         {/* Footer */}
         <div className="pt-4 border-t border-white/10 flex items-center justify-between shrink-0 text-zinc-400 text-[11px]">
-          <span>CRESCIVE v1.0 · Built by Brian Omuse</span>
+          <span>CRESCIVE · Created &amp; Founded in 2026 by Brian Omuse · Malaba, Kenya</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-xs transition-colors cursor-pointer"

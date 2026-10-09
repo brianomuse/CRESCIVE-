@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
-import { Trophy, ChevronRight, TrendingUp, Sparkles, ShieldCheck, Flame, Check, Calendar } from "lucide-react";
+import { Trophy, ChevronRight, TrendingUp, ShieldCheck } from "lucide-react";
 import { LeaderboardEntry } from "../../types";
 
 interface LeaderboardCardProps {
@@ -27,7 +27,6 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   xpToNextRank,
   nextRankUsername,
   rankChangeNotification,
-  topPeers = [],
   streakDays = 0,
   achievementsCount = 0,
   completedMovesCount = 0,
@@ -35,10 +34,7 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
   onOpenLeaderboard,
 }) => {
   const isNewUser = totalXp === 0 && completedMovesCount === 0;
-  const effectiveRank = userRank ?? (isNewUser ? totalParticipants : 24);
-  const rankLabel = isNewUser
-    ? `#${effectiveRank} Global · Last Place`
-    : `#${effectiveRank} Global`;
+  const effectiveRank = userRank ?? (totalParticipants > 0 ? (isNewUser ? totalParticipants : 1) : null);
 
   return (
     <motion.div
@@ -88,16 +84,16 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-2.5">
             <span className="text-3xl sm:text-4xl font-extrabold font-mono text-[#D4AF37] tracking-tight">
-              #{effectiveRank}
+              {effectiveRank ? `#${effectiveRank}` : "#—"}
             </span>
             <span className="text-sm uppercase font-mono tracking-wider text-zinc-300 font-semibold">
               Global
             </span>
-            {isNewUser && (
-              <span className="text-xs font-mono text-zinc-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">
-                Starting Position
-              </span>
-            )}
+            <span className="text-xs font-mono text-zinc-400">
+              {totalParticipants === 0
+                ? "· Growing"
+                : `· ${totalParticipants} ${totalParticipants === 1 ? "Member" : "Members"}`}
+            </span>
           </div>
 
           <div className="flex items-center gap-3 font-mono text-sm">
@@ -152,12 +148,12 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({
       </div>
 
       {/* Next rank target bar */}
-      {xpToNextRank > 0 && (
+      {xpToNextRank > 0 && effectiveRank && effectiveRank > 1 && (
         <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-xs font-mono relative z-10 text-zinc-300">
           <span className="flex items-center gap-1.5 text-[#F5D77F]">
             <span>⬆️</span>
             <span className="font-bold">{xpToNextRank} XP</span>
-            <span className="text-zinc-400">to #{Math.max(1, effectiveRank - 1)}</span>
+            <span className="text-zinc-400">to #{effectiveRank - 1}</span>
             {nextRankUsername && <span className="text-zinc-400">({nextRankUsername})</span>}
           </span>
           <span className="text-[11px] text-[#D4AF37] group-hover:underline">

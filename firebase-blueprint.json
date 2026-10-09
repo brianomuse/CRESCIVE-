@@ -1,0 +1,580 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public and synchronized profile for real authenticated CRESCIVE members",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Authoritative Firebase Auth UID",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 80
+        },
+        "preferredName": {
+          "type": "string",
+          "description": "User preferred nickname in CRESCIVE",
+          "maxLength": 60
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 120
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL or base64 avatar data",
+          "maxLength": 1000000
+        },
+        "becoming": {
+          "type": "string",
+          "description": "What the user is striving to become in CRESCIVE",
+          "maxLength": 240
+        },
+        "online": {
+          "type": "boolean",
+          "description": "Real-time presence status"
+        },
+        "lastSeen": {
+          "type": "string",
+          "description": "ISO timestamp of last activity",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "UserTrajectory": {
+      "title": "UserTrajectory",
+      "description": "Private persistent trajectory for personal Moves, streaks, achievements, and focus stats",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner UID",
+          "maxLength": 128
+        },
+        "moves": {
+          "type": "array",
+          "description": "Array of user moves and schedule states"
+        },
+        "userProfile": {
+          "type": "object",
+          "description": "Synchronized personal profile details"
+        },
+        "focusStats": {
+          "type": "object",
+          "description": "Deep Work Sanctuary focus session logs and stats"
+        },
+        "funZoneState": {
+          "type": "object",
+          "description": "XP, streaks, and fun zone state"
+        },
+        "dailyState": {
+          "type": "object",
+          "description": "Daily challenges completion state"
+        },
+        "dailyMovesState": {
+          "type": "object",
+          "description": "Interactive Daily Moves progress, workout, hydration, focus, recovery state"
+        },
+        "gameStats": {
+          "type": "object",
+          "description": "Mini game achievements and high scores"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last local/remote sync",
+          "maxLength": 64
+        },
+        "version": {
+          "type": "number",
+          "description": "Incremental sync version number"
+        }
+      },
+      "required": ["userId", "updatedAt"]
+    },
+    "FriendRequest": {
+      "title": "FriendRequest",
+      "description": "Friend request sent between two CRESCIVE members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Request ID formatted as fromUid_toUid",
+          "maxLength": 260
+        },
+        "fromUid": {
+          "type": "string",
+          "description": "Firebase UID of requester",
+          "maxLength": 128
+        },
+        "toUid": {
+          "type": "string",
+          "description": "Firebase UID of recipient",
+          "maxLength": 128
+        },
+        "fromName": {
+          "type": "string",
+          "description": "Display name of requester",
+          "maxLength": 80
+        },
+        "toName": {
+          "type": "string",
+          "description": "Display name of recipient",
+          "maxLength": 80
+        },
+        "fromAvatar": {
+          "type": "string",
+          "description": "Avatar of requester",
+          "maxLength": 1000000
+        },
+        "toAvatar": {
+          "type": "string",
+          "description": "Avatar of recipient",
+          "maxLength": 1000000
+        },
+        "status": {
+          "type": "string",
+          "description": "Request status",
+          "enum": ["pending", "accepted", "declined"],
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "fromUid", "toUid", "status"]
+    },
+    "Friendship": {
+      "title": "Friendship",
+      "description": "Confirmed friend relationship between two CRESCIVE members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Deterministic friendship ID formed by sorted UIDs",
+          "maxLength": 260
+        },
+        "users": {
+          "type": "array",
+          "description": "List of the two user UIDs in friendship"
+        },
+        "user1": {
+          "type": "string",
+          "description": "First member UID",
+          "maxLength": 128
+        },
+        "user2": {
+          "type": "string",
+          "description": "Second member UID",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "users", "user1", "user2"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Chat thread between two CRESCIVE members with typing indicators and read status tracking",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Conversation ID",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "description": "direct or community conversation",
+          "enum": ["direct", "community"],
+          "maxLength": 20
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "List of Firebase UIDs participating in this conversation"
+        },
+        "lastMessageText": {
+          "type": "string",
+          "description": "Preview of the most recent message",
+          "maxLength": 500
+        },
+        "lastSenderId": {
+          "type": "string",
+          "description": "Firebase UID of last sender",
+          "maxLength": 128
+        },
+        "lastSenderName": {
+          "type": "string",
+          "description": "Display name of last sender",
+          "maxLength": 80
+        },
+        "lastMessageAt": {
+          "type": "string",
+          "description": "ISO timestamp of last message",
+          "maxLength": 64
+        },
+        "typing": {
+          "type": "object",
+          "description": "Real-time typing status map keyed by participant UID"
+        },
+        "readStatus": {
+          "type": "object",
+          "description": "Read status map keyed by participant UID tracking lastReadAt and lastReadMessageId"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "type", "participantIds"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual message sent within a conversation, supporting emoji reactions, read receipts, and growth milestone sharing",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Message ID",
+          "maxLength": 128
+        },
+        "conversationId": {
+          "type": "string",
+          "description": "Parent conversation ID",
+          "maxLength": 128
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Array of participant UIDs in this conversation"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Firebase UID of sender",
+          "maxLength": 128
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of sender",
+          "maxLength": 80
+        },
+        "senderAvatar": {
+          "type": "string",
+          "description": "Avatar URL of sender",
+          "maxLength": 1000000
+        },
+        "text": {
+          "type": "string",
+          "description": "Message text content",
+          "maxLength": 2000
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Read receipt status indicating whether recipient has seen message"
+        },
+        "readAt": {
+          "type": "string",
+          "description": "ISO timestamp of read receipt",
+          "maxLength": 64
+        },
+        "reactions": {
+          "type": "object",
+          "description": "Map of emoji characters to arrays of user UIDs who added that reaction"
+        },
+        "milestone": {
+          "type": "object",
+          "description": "Optional explicitly shared CRESCIVE Growth Milestone"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "conversationId", "senderId", "text"]
+    },
+    "GrowthCircle": {
+      "title": "GrowthCircle",
+      "description": "Private accountability and deep work circle formed between real CRESCIVE friends",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Circle ID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Circle title",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Purpose and focus of circle",
+          "maxLength": 300
+        },
+        "creatorId": {
+          "type": "string",
+          "description": "Firebase UID of circle creator",
+          "maxLength": 128
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Display name of circle creator",
+          "maxLength": 80
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "List of active member Firebase UIDs"
+        },
+        "invitedFriendIds": {
+          "type": "array",
+          "description": "List of invited friend UIDs"
+        },
+        "memberDetails": {
+          "type": "object",
+          "description": "Map of member UIDs to their public CRESCIVE profile summary"
+        },
+        "focusArea": {
+          "type": "string",
+          "description": "Primary domain or category focus",
+          "maxLength": 80
+        },
+        "status": {
+          "type": "string",
+          "description": "Circle active or archived state",
+          "enum": ["active", "archived"],
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "name", "creatorId", "memberIds", "status"]
+    },
+    "CircleSharedItem": {
+      "title": "CircleSharedItem",
+      "description": "A Move or Goal intentionally shared with a Growth Circle for peer accountability",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Shared item ID",
+          "maxLength": 128
+        },
+        "circleId": {
+          "type": "string",
+          "description": "Parent circle ID",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase UID of item owner",
+          "maxLength": 128
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Display name of item owner",
+          "maxLength": 80
+        },
+        "ownerAvatar": {
+          "type": "string",
+          "description": "Avatar of item owner",
+          "maxLength": 1000000
+        },
+        "type": {
+          "type": "string",
+          "description": "move or goal",
+          "enum": ["move", "goal"],
+          "maxLength": 20
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of shared Move or Goal",
+          "maxLength": 160
+        },
+        "domain": {
+          "type": "string",
+          "description": "Life Dimension domain category",
+          "maxLength": 80
+        },
+        "timeCommitment": {
+          "type": "string",
+          "description": "Target duration or commitment",
+          "maxLength": 60
+        },
+        "status": {
+          "type": "string",
+          "description": "in_progress or completed",
+          "enum": ["in_progress", "completed"],
+          "maxLength": 20
+        },
+        "progressPercent": {
+          "type": "number",
+          "description": "Progress percentage from 0 to 100"
+        },
+        "cheers": {
+          "type": "array",
+          "description": "Array of member UIDs who cheered this commitment"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO timestamp of completion",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "circleId", "ownerId", "type", "title", "status"]
+    },
+    "SanctuarySession": {
+      "title": "SanctuarySession",
+      "description": "Synchronized Deep Work Sanctuary focus session for Growth Circle members",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Session ID",
+          "maxLength": 128
+        },
+        "circleId": {
+          "type": "string",
+          "description": "Parent circle ID",
+          "maxLength": 128
+        },
+        "hostId": {
+          "type": "string",
+          "description": "Firebase UID of session host",
+          "maxLength": 128
+        },
+        "hostName": {
+          "type": "string",
+          "description": "Display name of session host",
+          "maxLength": 80
+        },
+        "intention": {
+          "type": "string",
+          "description": "Focus sprint intention or topic",
+          "maxLength": 160
+        },
+        "durationMinutes": {
+          "type": "number",
+          "description": "Session duration in minutes"
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "ISO start timestamp",
+          "maxLength": 64
+        },
+        "endsAt": {
+          "type": "string",
+          "description": "ISO scheduled end timestamp",
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "description": "active, completed, or cancelled",
+          "enum": ["active", "completed", "cancelled"],
+          "maxLength": 20
+        },
+        "activeParticipantIds": {
+          "type": "array",
+          "description": "Array of member UIDs currently active in this sanctuary session"
+        },
+        "participantNames": {
+          "type": "object",
+          "description": "Map of member UIDs to display names"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "circleId", "hostId", "durationMinutes", "startedAt", "endsAt", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of registered CRESCIVE members for user discovery and profile sync"
+    },
+    "/users/{userId}/trajectory/{docId}": {
+      "schema": "UserTrajectory",
+      "description": "User private trajectory synchronizing moves, completion history, streaks, focus stats, and XP"
+    },
+    "/friendRequests/{requestId}": {
+      "schema": "FriendRequest",
+      "description": "Friend requests sent between members with pending, accepted, or declined status"
+    },
+    "/friendships/{friendshipId}": {
+      "schema": "Friendship",
+      "description": "Confirmed friendships between CRESCIVE members"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Top-level conversation documents with typing indicators and read status"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Sub-collection of messages inside each conversation with reactions and milestone support"
+    },
+    "/circles/{circleId}": {
+      "schema": "GrowthCircle",
+      "description": "Private Growth Circles for shared accountability and deep work collaboration"
+    },
+    "/circles/{circleId}/sharedItems/{itemId}": {
+      "schema": "CircleSharedItem",
+      "description": "Sub-collection of user-shared Moves and Goals within a Growth Circle"
+    },
+    "/circles/{circleId}/sanctuarySessions/{sessionId}": {
+      "schema": "SanctuarySession",
+      "description": "Sub-collection of synchronized Deep Work Sanctuary focus sessions for a Growth Circle"
+    }
+  }
+}

@@ -38,6 +38,135 @@ export interface MoveItem {
   snoozeCount?: number;
   lastSnoozedAt?: string;
   reminderDismissed?: boolean;
+  // Google Calendar Integration
+  googleCalendarEventId?: string;
+  googleCalendarSyncedAt?: string;
+  googleCalendarHtmlLink?: string;
+  // Device Alarm Integration
+  androidAlarmSet?: boolean;
+  androidAlarmTime?: string;
+}
+
+export type TrajectorySyncStatus = "synced" | "syncing" | "offline" | "error" | "unauthenticated";
+
+export interface TrajectoryData {
+  userId: string;
+  moves: MoveItem[];
+  userProfile?: UserProfile | null;
+  focusStats?: FocusStats;
+  funZoneState?: FunZoneState;
+  dailyState?: CresciveDailyState;
+  dailyMovesState?: DailyMovesState;
+  gameStats?: MiniGameStats;
+  updatedAt: string;
+  version: number;
+}
+
+// ==================== INTERACTIVE DAILY MOVES SYSTEM TYPES ====================
+export type ExerciseId = 
+  | "squat"
+  | "pushup"
+  | "gluteBridge"
+  | "plank"
+  | "reverseLunge"
+  | "birdDog"
+  | "calfRaise"
+  | "sprintTechnique"
+  | "warmup";
+
+export interface ExerciseAlternative {
+  name: string;
+  description: string;
+}
+
+export interface ExerciseStepImage {
+  step: 1 | 2 | 3;
+  label: "START POSITION" | "MOVEMENT POSITION" | "FINISH POSITION";
+  imageUrl: string;
+  instruction: string;
+}
+
+export interface ExerciseItem {
+  id: ExerciseId;
+  name: string;
+  target: string;
+  targetReps?: number;
+  targetSeconds?: number;
+  isTimed?: boolean;
+  technique: string;
+  keyCues: string[];
+  steps: [ExerciseStepImage, ExerciseStepImage, ExerciseStepImage];
+  alternative: ExerciseAlternative;
+  safetyNotice: string;
+}
+
+export type TrainingCycleDay = 1 | 2 | 3 | 4;
+
+export interface DailySpeedDrill {
+  title: string;
+  subtitle: string;
+  efforts: number;
+  workSeconds: number;
+  recoverySeconds: number;
+  instructions: string;
+  warmupNote: string;
+}
+
+export interface RecoverySuggestion {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+}
+
+export interface WorkoutProgramDay {
+  dayNumber: TrainingCycleDay;
+  title: string;
+  phaseName: string;
+  tagline: string;
+  isRecoveryDay: boolean;
+  exercises: ExerciseItem[];
+  speedDrill?: DailySpeedDrill;
+  recoverySuggestions?: RecoverySuggestion[];
+}
+
+export type DailyEssentialCategory = 
+  | "move"
+  | "hydrate"
+  | "rest"
+  | "focus"
+  | "learn"
+  | "reset"
+  | "connect";
+
+export interface DailyMovesState {
+  date: string; // YYYY-MM-DD
+  cycleDay: TrainingCycleDay;
+  completedEssentials: Record<DailyEssentialCategory, boolean>;
+  workout: {
+    warmupCompleted: boolean;
+    completedExerciseIds: string[];
+    speedCompleted: boolean;
+    completed: boolean;
+    completedAt?: string;
+  };
+  hydrationBreaksCount: number;
+  hydrationLastLoggedAt?: string;
+  recoveryCompleted: boolean;
+  recoveryNotes?: string;
+  focusCompleted: boolean;
+  focusMinutesCompleted: number;
+  learnCompleted: boolean;
+  learnNotes?: string;
+  resetCompleted: boolean;
+  resetAt?: string;
+  connectCompleted: boolean;
+  connectNotes?: string;
+  dayCompleted: boolean;
+  dayCompletedAt?: string;
+  xpEarnedToday: number;
+  streakDays: number;
+  lastActiveDate: string;
 }
 
 export interface MoveIdea {
@@ -296,4 +425,26 @@ export interface FocusStats {
   sessionsHistory: FocusSession[];
   distinctDays: string[];
   longestSessionMinutes: number;
+}
+
+// ==================== REAL NOTIFICATION SYSTEM TYPES ====================
+export type NotificationPermissionState = "default" | "granted" | "denied" | "unsupported";
+
+export interface NotificationPreferences {
+  chatMessages: boolean;
+  moveReminders: boolean;
+  cresciveUpdates: boolean;
+}
+
+export interface MoveReminderItem {
+  id: string;
+  userId: string;
+  moveId?: string; // specific move or "daily_move"
+  moveTitle: string;
+  scheduledTime: string; // "18:00"
+  repeatSchedule: "daily" | "weekdays" | "weekly" | "once";
+  enabled: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  lastNotifiedDate?: string; // YYYY-MM-DD to prevent duplicate daily notifications
 }

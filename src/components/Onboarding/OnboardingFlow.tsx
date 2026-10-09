@@ -114,8 +114,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
               CRESCIVE
             </h1>
           </div>
-          <p className="text-[10px] tracking-[0.4em] uppercase opacity-60 text-[#f5f5f0]">
-            Your future, in progress
+          <p className="text-[10px] tracking-[0.4em] uppercase opacity-70 text-[#f5f5f0] font-serif-cresive">
+            The app of becoming.
           </p>
         </div>
 
@@ -175,9 +175,9 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="text-[11px] tracking-[0.4em] uppercase opacity-60 mb-8 font-light"
+                  className="text-[11px] tracking-[0.4em] uppercase opacity-70 mb-8 font-light font-serif-cresive"
                 >
-                  Your future, in progress.
+                  The app of becoming.
                 </motion.p>
 
                 <motion.div

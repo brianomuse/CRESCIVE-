@@ -3,26 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>CRESCIVE — Your future, in progress</title>
-    <meta name="description" content="CRESCIVE is a personal growth app created and founded by Brian Omuse that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development." />
+    <title>CRESCIVE — The App of Becoming | Personal Growth Platform by Brian Omuse</title>
+    <meta name="description" content="CRESCIVE is a personal growth and self-development platform created and founded in 2026 by Brian Omuse in Malaba, Kenya. The app of becoming." />
     <meta name="author" content="Brian Omuse" />
     <meta name="creator" content="Brian Omuse" />
+    <meta name="publisher" content="CRESCIVE" />
     <meta name="google-site-verification" content="q3CTk0zDb72HvczihWcYoJc181oobqtr2CmGk5K6vjo" />
     <link rel="canonical" href="https://crescive.ai.studio/" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow" />
+    
+    <!-- OpenGraph Metadata -->
     <meta property="og:site_name" content="CRESCIVE" />
-    <meta property="og:title" content="CRESCIVE — Your future, in progress" />
-    <meta property="og:description" content="CRESCIVE is a personal growth app created and founded by Brian Omuse that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development." />
+    <meta property="og:title" content="CRESCIVE — The App of Becoming" />
+    <meta property="og:description" content="CRESCIVE is a personal growth and self-development platform created and founded in 2026 by Brian Omuse in Malaba, Kenya. The app of becoming." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://crescive.ai.studio/" />
     <meta property="og:image" content="https://crescive.ai.studio/crescive_logo.png" />
-    <meta property="og:image:alt" content="CRESCIVE Logo" />
+    <meta property="og:image:alt" content="CRESCIVE — The app of becoming" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Card Metadata -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CRESCIVE — Your future, in progress" />
-    <meta name="twitter:description" content="CRESCIVE is a personal growth app created and founded by Brian Omuse that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development." />
+    <meta name="twitter:title" content="CRESCIVE — The App of Becoming" />
+    <meta name="twitter:description" content="CRESCIVE is a personal growth and self-development platform created and founded in 2026 by Brian Omuse in Malaba, Kenya. The app of becoming." />
     <meta name="twitter:image" content="https://crescive.ai.studio/crescive_logo.png" />
-    <meta name="twitter:image:alt" content="CRESCIVE Logo" />
+    <meta name="twitter:image:alt" content="CRESCIVE — The app of becoming" />
+
+    <!-- Mobile & PWA Settings -->
     <meta name="theme-color" content="#050510" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -30,11 +38,16 @@
     <meta name="apple-mobile-web-app-title" content="CRESCIVE" />
     <meta name="application-name" content="CRESCIVE" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="alternate" type="application/json" href="/ai-info.json" title="CRESCIVE AI &amp; Machine-Readable Product Information" />
     <link rel="icon" type="image/png" href="/crescive_logo.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Schema.org Authoritative Entity Structured Data (JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -44,8 +57,10 @@
           "@id": "https://crescive.ai.studio/#website",
           "url": "https://crescive.ai.studio/",
           "name": "CRESCIVE",
-          "alternateName": "CRESCIVE",
-          "description": "CRESCIVE is a personal growth app created and founded by Brian Omuse that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development.",
+          "alternateName": ["CRESCIVE Platform", "The App of Becoming"],
+          "headline": "The app of becoming.",
+          "description": "CRESCIVE is a personal growth and self-development platform created and founded in 2026 by Brian Omuse in Malaba, Kenya.",
+          "inLanguage": "en-US",
           "creator": {
             "@id": "https://crescive.ai.studio/#creator"
           },
@@ -60,24 +75,77 @@
           "@type": "Organization",
           "@id": "https://crescive.ai.studio/#organization",
           "name": "CRESCIVE",
-          "alternateName": "CRESCIVE",
+          "legalName": "CRESCIVE",
           "url": "https://crescive.ai.studio/",
+          "slogan": "The app of becoming.",
+          "description": "CRESCIVE is a digital personal growth and self-development organization and platform created and founded in 2026 by Brian Omuse in Malaba, Kenya.",
+          "foundingDate": "2026",
+          "foundingLocation": {
+            "@type": "Place",
+            "name": "Malaba, Kenya",
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Malaba",
+              "addressCountry": "KE"
+            }
+          },
           "logo": {
             "@type": "ImageObject",
             "url": "https://crescive.ai.studio/crescive_logo.png",
-            "caption": "CRESCIVE"
+            "caption": "CRESCIVE Logo"
           },
           "image": "https://crescive.ai.studio/crescive_logo.png",
           "founder": {
             "@id": "https://crescive.ai.studio/#creator"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "creator & founder inquiry",
+            "email": "brianomuse017@gmail.com",
+            "telephone": "+254710796433"
           }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://crescive.ai.studio/#application",
+          "name": "CRESCIVE",
+          "alternateName": ["CRESCIVE Growth App", "The App of Becoming"],
+          "url": "https://crescive.ai.studio/",
+          "applicationCategory": "LifestyleApplication, ProductivityApplication",
+          "operatingSystem": "All (Web, Android, iOS, Desktop PWA)",
+          "dateCreated": "2026",
+          "description": "CRESCIVE is an integrated personal growth and self-development platform created and founded in 2026 by Brian Omuse. Known as 'The app of becoming,' it connects identity to daily trajectory through discrete Moves, 15 life dimensions, future vision mapping, deep work focus sanctuary, mini-games, and verified real-member chat.",
+          "creator": {
+            "@id": "https://crescive.ai.studio/#creator"
+          },
+          "author": {
+            "@id": "https://crescive.ai.studio/#creator"
+          },
+          "publisher": {
+            "@id": "https://crescive.ai.studio/#organization"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Daily Moves action engine with time commitments and Google Calendar sync",
+            "Deep Work Sanctuary with ambient focus timers and flow states",
+            "15 Life Dimensions development map and category reflection",
+            "Future 5-Year Vision mapping and Scenario Simulator",
+            "Navigator intelligent assistant for learning, STEM, coding, and growth",
+            "Real-time Chat with verified member discovery and mutual friendship requests",
+            "Fun Zone with mini-games, mental challenges, and clean humor",
+            "Real community leaderboard with authenticated XP tracking"
+          ]
         },
         {
           "@type": "Person",
           "@id": "https://crescive.ai.studio/#creator",
           "name": "Brian Omuse",
           "jobTitle": "Creator & Founder",
-          "description": "Brian Omuse is the creator and founder of CRESCIVE, a teenage creator and digital innovator from Malaba, Kenya.",
+          "description": "Brian Omuse is the creator and founder of CRESCIVE. A teenage creator and digital innovator from Malaba, Kenya, Brian founded CRESCIVE in 2026 with the philosophy that your future is a trajectory, not a destination.",
           "birthPlace": {
             "@type": "Place",
             "name": "Malaba, Kenya"
@@ -87,11 +155,28 @@
             "name": "Malaba, Kenya"
           },
           "image": "https://crescive.ai.studio/creator_brian.jpg",
+          "email": "brianomuse017@gmail.com",
+          "telephone": "+254710796433",
           "knowsAbout": [
-            "Personal Development",
-            "Digital Innovation",
-            "Life Navigation Systems"
+            "Personal Growth & Self-Development",
+            "Digital Innovation & Web Applications",
+            "Goal & Habit Systems",
+            "Future Trajectory Planning"
           ]
+        },
+        {
+          "@type": "ProfilePage",
+          "@id": "https://crescive.ai.studio/#creator-profile",
+          "url": "https://crescive.ai.studio/#creator",
+          "name": "Brian Omuse — Creator & Founder of CRESCIVE",
+          "headline": "The Creator & Founder of CRESCIVE",
+          "about": {
+            "@id": "https://crescive.ai.studio/#creator"
+          },
+          "isPartOf": {
+            "@id": "https://crescive.ai.studio/#website"
+          },
+          "description": "Official first-party profile and story of Brian Omuse, creator and founder of CRESCIVE from Malaba, Kenya."
         }
       ]
     }
@@ -99,15 +184,21 @@
   </head>
   <body class="bg-[#050510] text-[#f5f5f0] selection:bg-[#D4AF37] selection:text-black antialiased overflow-x-hidden">
     <noscript>
-      <div style="padding: 24px; text-align: center; color: #f5f5f0; background: #050510; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <h1>CRESCIVE — Your future, in progress</h1>
-        <p><strong>Brian Omuse is the creator and founder of CRESCIVE.</strong></p>
-        <p>CRESCIVE was created by Brian Omuse, a teenage creator and digital innovator from Malaba, Kenya.</p>
-        <p>CRESCIVE is a personal growth app that helps you learn, grow, create and make progress through goals, habits, focus, challenges, skills and self-development.</p>
+      <div style="padding: 32px 20px; text-align: center; color: #f5f5f0; background: #050510; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
+        <h1 style="color: #D4AF37; font-size: 28px; margin-bottom: 8px;">CRESCIVE</h1>
+        <p style="font-size: 18px; margin-bottom: 16px; color: #f5f5f0;"><strong>The app of becoming.</strong></p>
+        <p style="max-width: 600px; margin: 0 auto 16px auto; color: #d4d4d8;">
+          <strong>Creator &amp; Founder:</strong> Brian Omuse<br />
+          <strong>Created:</strong> 2026<br />
+          <strong>Origin:</strong> Malaba, Kenya<br />
+          <strong>Purpose:</strong> A personal growth and self-development platform
+        </p>
+        <p style="max-width: 600px; margin: 0 auto; color: #a1a1aa; font-size: 14px;">
+          CRESCIVE was created and founded in 2026 by Brian Omuse in Malaba, Kenya to empower individuals to translate ambitions into discrete daily actions, build compounding habits, explore 15 life dimensions, and shape their personal trajectory.
+        </p>
       </div>
     </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

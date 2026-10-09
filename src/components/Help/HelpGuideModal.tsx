@@ -17,6 +17,7 @@ import {
   Zap,
   ArrowRight,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 
 interface HelpGuideModalProps {
@@ -149,8 +150,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
     borderColor: "border-rose-500/30",
     badge: "Story & Vision",
     description:
-      "This section introduces the creator behind CRESCIVE, Brian Omuse, and gives users context about the story and idea behind the app. Brian is a teenage creator and digital innovator from Malaba, Kenya, who built CRESCIVE to give anyone a structured path to personal progress.",
-    coreIdea: "Built from Malaba, Kenya — made for progress everywhere.",
+      "This section introduces the creator and founder behind CRESCIVE, Brian Omuse, who founded CRESCIVE in 2026 in Malaba, Kenya. Known as 'The app of becoming,' CRESCIVE is a personal growth and self-development platform built to give anyone a structured path to personal progress.",
+    coreIdea: "Created in 2026 from Malaba, Kenya — The app of becoming.",
     highlights: [
       "Discover the founding vision and philosophy of CRESCIVE.",
       "Learn about Brian Omuse's story as a young builder and innovator.",
@@ -172,6 +173,23 @@ const GUIDE_SECTIONS: GuideSection[] = [
       "Enjoy 3D mini-games designed for quick focus and relaxation.",
       "Discover clean, witty tech jokes to lighten your mood.",
       "Earn playful XP even while unwinding and taking a recharge break.",
+    ],
+  },
+  {
+    id: "chat",
+    title: "CHAT",
+    oneLiner: "Connect with real CRESCIVE members.",
+    icon: MessageSquare,
+    accentColor: "text-[#D4AF37]",
+    borderColor: "border-[#D4AF37]/30",
+    badge: "Real Community",
+    description:
+      "CRESCIVE Chat allows you to connect with real fellow members. Using authenticated Firebase UID identity and real-time Firestore synchronization, members can discover one another, share growth progress, and build mutual accountability.",
+    coreIdea: "Real members + authentic growth → collective momentum.",
+    highlights: [
+      "Authenticated Firebase identity with zero mock or fake accounts.",
+      "Synchronized directly with your existing CRESCIVE profile.",
+      "Discover real members, their aspirations, and connect for growth.",
     ],
   },
 ];

@@ -9,6 +9,7 @@ import { HomeLeaderboardCard } from "../Leaderboard/HomeLeaderboardCard";
 import { GlobalLeaderboardModal } from "../Leaderboard/GlobalLeaderboardModal";
 import { HelpButton } from "../Help/HelpButton";
 import { getStoredDailyState } from "../../utils/cresciveDailyStorage";
+import { CresciveLogo } from "../CresciveLogo";
 import {
   Sparkles,
   Plus,
@@ -32,7 +33,7 @@ interface HomeScreenProps {
   moves: MoveItem[];
   onOpenCreateMove: (mode?: "create" | "ideas") => void;
   onToggleMove: (id: string) => void;
-  onNavigateTab: (tab: "home" | "moves" | "fun" | "categories" | "future" | "navigator" | "profile") => void;
+  onNavigateTab: (tab: "home" | "moves" | "fun" | "categories" | "future" | "navigator" | "chat" | "profile") => void;
   onOpenCreatorStory: () => void;
   onStartFocusSession?: (move: MoveItem | null, customDuration?: number) => void;
   onOpenHelpGuide?: () => void;
@@ -117,12 +118,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-mono tracking-widest text-[#D4AF37] uppercase font-semibold">
-                CREATOR SPOTLIGHT
+                CREATOR &amp; FOUNDER
               </span>
-              <span className="text-[10px] text-zinc-400 font-light">· Age 14</span>
+              <span className="text-[10px] text-zinc-400 font-light">· Created 2026 · Malaba, Kenya</span>
             </div>
             <p className="text-xs text-white truncate font-medium">
-              Creator Brian Omuse · The vision behind CRESCIVE
+              Brian Omuse · The vision behind CRESCIVE
             </p>
           </div>
         </div>
@@ -151,13 +152,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#101025] border border-[#D4AF37]/40 text-[#D4AF37] text-[10px] font-mono tracking-widest uppercase mb-2">
               <Sparkles className="w-3 h-3 text-[#D4AF37]" />
-              <span>THE SYSTEM FOR BECOMING</span>
+              <span>THE APP OF BECOMING</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-light font-serif-cresive text-white tracking-wide">
               {greeting}
             </h1>
-            <p className="text-[#f5f5f0]/60 text-xs tracking-wider uppercase mt-1 font-light">
-              Your future is in progress.
+            <p className="text-[#f5f5f0]/70 text-xs tracking-wider uppercase mt-1 font-light font-serif-cresive">
+              &ldquo;The app of becoming.&rdquo;
             </p>
           </div>
 
@@ -660,12 +661,66 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </button>
       </motion.section>
 
-      {/* HELP / HOW TO USE THE APP (At the very bottom of the Home section) */}
+      {/* HELP / HOW TO USE THE APP */}
       {onOpenHelpGuide && (
         <div className="pt-3 pb-2 flex justify-center">
           <HelpButton onClick={onOpenHelpGuide} />
         </div>
       )}
+
+      {/* CRESCIVE OFFICIAL ENTITY & DISCOVERABILITY FOOTER */}
+      <footer className="mt-8 pt-6 pb-6 border-t border-white/10 text-center space-y-4">
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <CresciveLogo className="w-6 h-6" />
+            <span className="font-serif-cresive text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase">
+              CRESCIVE
+            </span>
+          </div>
+          <p className="text-xs font-serif-cresive italic text-amber-200/90">
+            &ldquo;The app of becoming.&rdquo;
+          </p>
+        </div>
+
+        <div className="max-w-md mx-auto px-4 text-[11px] text-zinc-400 font-light leading-relaxed space-y-1">
+          <p>
+            <strong className="text-zinc-200">Creator &amp; Founder:</strong> Brian Omuse · Created 2026 · Malaba, Kenya
+          </p>
+          <p>
+            <strong className="text-zinc-200">Purpose:</strong> A personal growth and self-development platform
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1 text-xs">
+          <button
+            onClick={onOpenCreatorStory}
+            className="text-zinc-400 hover:text-[#D4AF37] transition-colors cursor-pointer flex items-center gap-1 font-mono text-[11px]"
+          >
+            <span>Brian&apos;s Story</span>
+            <ChevronRight className="w-3 h-3 text-[#D4AF37]" />
+          </button>
+          <span className="text-zinc-700">·</span>
+          {onOpenHelpGuide && (
+            <>
+              <button
+                onClick={onOpenHelpGuide}
+                className="text-zinc-400 hover:text-white transition-colors cursor-pointer font-mono text-[11px]"
+              >
+                App Guide
+              </button>
+              <span className="text-zinc-700">·</span>
+            </>
+          )}
+          <a
+            href="https://crescive.ai.studio/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#D4AF37]/80 hover:text-[#D4AF37] transition-colors font-mono text-[11px]"
+          >
+            crescive.ai.studio
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };

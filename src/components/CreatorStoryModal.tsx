@@ -126,7 +126,7 @@ export const CreatorStoryModal: React.FC<CreatorStoryModalProps> = ({ isOpen, on
             </section>
 
             {/* Information Grid */}
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
               <div className="p-2.5 rounded-xl bg-[#050510] border border-white/5">
                 <span className="text-[10px] uppercase text-zinc-500 block">Name</span>
                 <span className="font-semibold text-zinc-200">Brian Omuse</span>
@@ -136,16 +136,31 @@ export const CreatorStoryModal: React.FC<CreatorStoryModalProps> = ({ isOpen, on
                 <span className="font-semibold text-zinc-200">Creator &amp; Founder</span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#050510] border border-white/5">
+                <span className="text-[10px] uppercase text-zinc-500 block">Created</span>
+                <span className="font-semibold text-[#D4AF37]">2026</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#050510] border border-white/5">
                 <span className="text-[10px] uppercase text-zinc-500 block">Origin</span>
                 <span className="font-semibold text-zinc-200">Malaba, Kenya</span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#050510] border border-white/5">
-                <span className="text-[10px] uppercase text-zinc-500 block">School</span>
-                <span className="font-semibold text-zinc-200">Malaba Township</span>
+                <span className="text-[10px] uppercase text-zinc-500 block">Tagline</span>
+                <span className="font-semibold text-amber-200">&ldquo;The app of becoming.&rdquo;</span>
               </div>
-              <div className="col-span-2 p-2.5 rounded-xl bg-[#050510] border border-white/5">
-                <span className="text-[10px] uppercase text-zinc-500 block">Identity</span>
-                <span className="font-semibold text-zinc-200">Teenage Creator • Digital Innovator • Future Builder</span>
+              <div className="p-2.5 rounded-xl bg-[#050510] border border-white/5">
+                <span className="text-[10px] uppercase text-zinc-500 block">Official Site</span>
+                <a
+                  href="https://crescive.ai.studio/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-[#D4AF37] hover:underline truncate block"
+                >
+                  crescive.ai.studio
+                </a>
+              </div>
+              <div className="col-span-2 sm:col-span-3 p-2.5 rounded-xl bg-[#050510] border border-white/5">
+                <span className="text-[10px] uppercase text-zinc-500 block">Purpose</span>
+                <span className="font-semibold text-zinc-200">A personal growth and self-development platform</span>
               </div>
             </div>
 

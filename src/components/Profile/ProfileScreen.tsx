@@ -28,22 +28,31 @@ import {
   Smartphone,
   Shield,
   FileText,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
+import { useFirebaseAuth } from "../../contexts/FirebaseAuthContext";
+import {
+  subscribeSyncStatus,
+  syncTrajectoryWithCloud,
+} from "../../utils/trajectorySyncService";
+import {
+  isGoogleCalendarConnected,
+  connectGoogleCalendar,
+  disconnectGoogleCalendar,
+} from "../../utils/googleCalendarService";
+import { isAndroidDevice } from "../../utils/androidAlarmService";
+import { TrajectorySyncStatus } from "../../types";
 import { PWAInstallButton } from "../PWA/PWAInstallButton";
 import { PrivacyPolicyModal } from "./PrivacyPolicyModal";
-import { ReminderSettings } from "../../types";
 import { getStoredFocusStats } from "../../utils/focusStorage";
-import {
-  getStoredReminderSettings,
-  saveStoredReminderSettings,
-  getNotificationPermissionStatus,
-  requestBrowserNotificationPermission,
-  playCresciveChime,
-  triggerVibration,
-} from "../../utils/reminderEngine";
 import { LeaderboardCard } from "../Leaderboard/LeaderboardCard";
 import { GlobalLeaderboardModal } from "../Leaderboard/GlobalLeaderboardModal";
 import { HelpButton } from "../Help/HelpButton";
+import { NotificationSettingsSection } from "./NotificationSettingsSection";
 import {
   fetchLeaderboardData,
   calculateUserStats,
@@ -98,30 +107,53 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
   }, [userProfile, moves.length]);
 
-  // Reminder & Notification Settings
-  const [reminderSettings, setReminderSettings] = useState<ReminderSettings>(getStoredReminderSettings());
-  const [permissionStatus, setPermissionStatus] = useState<string>(getNotificationPermissionStatus());
-  const [justTestedChime, setJustTestedChime] = useState(false);
+  // Auth Context & Cloud Trajectory Sync State
+  const { currentUser, signInWithGoogle } = useFirebaseAuth();
+  const [syncStatus, setSyncStatus] = useState<TrajectorySyncStatus>("unauthenticated");
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
+
+  // Google Calendar Integration State
+  const [isGcalConnected, setIsGcalConnected] = useState(isGoogleCalendarConnected());
+  const [isConnectingGcal, setIsConnectingGcal] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeSyncStatus((status) => {
+      setSyncStatus(status);
+    });
+    return unsub;
+  }, []);
+
+  const handleSyncNow = async () => {
+    if (!currentUser) {
+      await signInWithGoogle();
+      return;
+    }
+    setIsManualSyncing(true);
+    try {
+      await syncTrajectoryWithCloud(currentUser.uid);
+    } finally {
+      setIsManualSyncing(false);
+    }
+  };
+
+  const handleConnectGcal = async () => {
+    setIsConnectingGcal(true);
+    try {
+      const res = await connectGoogleCalendar();
+      if (res.success) {
+        setIsGcalConnected(true);
+      }
+    } finally {
+      setIsConnectingGcal(false);
+    }
+  };
+
+  const handleDisconnectGcal = () => {
+    disconnectGoogleCalendar();
+    setIsGcalConnected(false);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const updateSetting = <K extends keyof ReminderSettings>(key: K, val: ReminderSettings[K]) => {
-    const updated = { ...reminderSettings, [key]: val };
-    setReminderSettings(updated);
-    saveStoredReminderSettings(updated);
-  };
-
-  const handleRequestPermission = async () => {
-    const res = await requestBrowserNotificationPermission();
-    setPermissionStatus(res);
-  };
-
-  const handleTestChime = () => {
-    playCresciveChime();
-    triggerVibration();
-    setJustTestedChime(true);
-    setTimeout(() => setJustTestedChime(false), 2000);
-  };
 
   const handleSaveName = () => {
     if (nameInput.trim().length > 0) {
@@ -436,7 +468,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       {/* Prominently Placed Leaderboard Card */}
       <LeaderboardCard
         userRank={leaderboardData?.userRank ?? null}
-        totalParticipants={leaderboardData?.totalParticipants ?? 500}
+        totalParticipants={leaderboardData?.totalParticipants ?? 0}
         totalXp={userStats.totalXp}
         level={userStats.level}
         xpToNextRank={leaderboardData?.xpToNextRank ?? 0}
@@ -606,152 +638,162 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* Section 9: Notifications & Reminders Controls */}
+      {/* Cloud Trajectory Synchronization (Feature 1) */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-[#101025] border border-[#D4AF37]/30 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-[#050510] border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] shrink-0">
+            <Cloud className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Cloud Trajectory Sync</span>
+              {/* Subtle sync status */}
+              {syncStatus === "synced" && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 flex items-center gap-1 font-semibold">
+                  <Check className="w-3 h-3 text-emerald-400" />
+                  Synced
+                </span>
+              )}
+              {syncStatus === "syncing" && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 flex items-center gap-1 font-semibold">
+                  <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                  Syncing...
+                </span>
+              )}
+              {syncStatus === "offline" && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-500/15 border border-zinc-500/30 text-zinc-400 flex items-center gap-1 font-semibold">
+                  <CloudOff className="w-3 h-3" />
+                  Offline
+                </span>
+              )}
+              {syncStatus === "error" && (
+                <button
+                  onClick={handleSyncNow}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-300 flex items-center gap-1 font-semibold hover:bg-rose-500/25 cursor-pointer"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Sync failed — Tap to retry
+                </button>
+              )}
+              {syncStatus === "unauthenticated" && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-zinc-400">
+                  Local Mode
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              {currentUser
+                ? `Secured to ${currentUser.email || currentUser.displayName}. Restored automatically across all your devices.`
+                : "Sign in with Google to automatically backup and restore your trajectory across devices."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          {currentUser ? (
+            <button
+              onClick={handleSyncNow}
+              disabled={isManualSyncing || syncStatus === "syncing"}
+              className="py-1.5 px-3.5 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isManualSyncing ? "animate-spin" : ""}`} />
+              <span>{isManualSyncing ? "Syncing..." : "Sync Now"}</span>
+            </button>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="py-1.5 px-3.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shadow-md"
+            >
+              <span>Sign In to Sync</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Scheduling & Real Device Integrations (Feature 2) */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#101025] border border-[#D4AF37]/30 shadow-lg space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#050510] border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
-              <Bell className="w-4 h-4" />
+              <Calendar className="w-4 h-4" />
             </div>
             <div>
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#D4AF37] font-semibold block">
-                SYSTEM PREFERENCES
+                SCHEDULING INTEGRATIONS
               </span>
               <h3 className="text-base font-bold text-white leading-snug">
-                Notifications & Reminders
+                Google Calendar & Device Alarms
               </h3>
             </div>
           </div>
-
-          {/* Master Toggle */}
-          <button
-            id="toggle-master-reminders"
-            onClick={() => updateSetting("remindersEnabled", !reminderSettings.remindersEnabled)}
-            className={`py-1.5 px-4 rounded-full text-xs font-bold transition-all cursor-pointer ${
-              reminderSettings.remindersEnabled
-                ? "bg-gradient-to-r from-[#D4AF37] to-[#B8860B] text-black shadow-md"
-                : "bg-white/10 text-zinc-400 hover:text-white"
-            }`}
-          >
-            {reminderSettings.remindersEnabled ? "ENABLED" : "MUTED"}
-          </button>
         </div>
 
         <p className="text-xs text-zinc-400 font-light leading-relaxed">
-          CRESCIVE alerts you gently at the precise moment you planned your Move. Reminders respect your autonomy and can be completely silenced anytime.
+          Connect your Moves to real external scheduling systems. CRESCIVE integrates directly with Google Calendar and the official Android Clock application.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          {/* Permission Status & Request */}
+          {/* Google Calendar Connection Card */}
           <div className="p-3.5 rounded-2xl bg-[#050510] border border-white/10 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="text-xs font-semibold text-white">System Access</span>
+                <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span className="text-xs font-semibold text-white">Google Calendar</span>
               </div>
               <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">
-                Status: <span className="text-white capitalize">{permissionStatus}</span>
+                Status:{" "}
+                <span className={isGcalConnected ? "text-emerald-400 font-semibold" : "text-zinc-400"}>
+                  {isGcalConnected ? "Connected" : "Disconnected"}
+                </span>
               </span>
             </div>
 
-            {permissionStatus !== "granted" ? (
+            {isGcalConnected ? (
               <button
-                onClick={handleRequestPermission}
-                className="py-1.5 px-3 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-semibold hover:bg-[#D4AF37]/30 transition-colors cursor-pointer whitespace-nowrap"
+                onClick={handleDisconnectGcal}
+                className="py-1 px-3 rounded-xl border border-white/10 text-[11px] text-zinc-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors cursor-pointer"
               >
-                Grant Access
+                Disconnect
               </button>
             ) : (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Active
-              </span>
+              <button
+                onClick={handleConnectGcal}
+                disabled={isConnectingGcal}
+                className="py-1.5 px-3 rounded-xl bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-xs font-semibold hover:bg-[#D4AF37]/30 transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1"
+              >
+                {isConnectingGcal ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Connecting...</span>
+                  </>
+                ) : (
+                  <span>Connect</span>
+                )}
+              </button>
             )}
           </div>
 
-          {/* Default Reminder Timing */}
+          {/* Android Alarm Clock Capability Card */}
           <div className="p-3.5 rounded-2xl bg-[#050510] border border-white/10 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="text-xs font-semibold text-white">Default Timing</span>
+                <Smartphone className="w-3.5 h-3.5 text-[#06b6d4]" />
+                <span className="text-xs font-semibold text-white">Android System Alarm</span>
               </div>
               <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">
-                When alert rings
+                {isAndroidDevice() ? "Android System Clock Detected" : "Native Android Clock Integration"}
               </span>
             </div>
 
-            <select
-              value={reminderSettings.defaultTimingMinutes}
-              onChange={(e) => updateSetting("defaultTimingMinutes", parseInt(e.target.value, 10))}
-              className="bg-[#101025] border border-white/15 rounded-xl text-xs text-white px-2.5 py-1.5 focus:outline-none cursor-pointer"
-            >
-              <option value={0}>At scheduled time</option>
-              <option value={5}>5 min before</option>
-              <option value={10}>10 min before</option>
-              <option value={15}>15 min before</option>
-            </select>
-          </div>
-
-          {/* Sound Toggle & Acoustic Test */}
-          <div className="p-3.5 rounded-2xl bg-[#050510] border border-white/10 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <Volume2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="text-xs font-semibold text-white">Chime Sound</span>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">
-                Golden harmonic acoustic bell
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleTestChime}
-                className="py-1 px-2.5 rounded-lg border border-white/10 hover:border-[#D4AF37]/50 text-[10px] text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                title="Preview sound"
-              >
-                {justTestedChime ? "Playing..." : "Test Chime"}
-              </button>
-
-              <button
-                onClick={() => updateSetting("soundEnabled", !reminderSettings.soundEnabled)}
-                className={`py-1 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  reminderSettings.soundEnabled
-                    ? "bg-[#D4AF37]/20 border border-[#D4AF37]/50 text-[#D4AF37]"
-                    : "bg-white/5 border border-white/10 text-zinc-500"
-                }`}
-              >
-                {reminderSettings.soundEnabled ? "ON" : "OFF"}
-              </button>
-            </div>
-          </div>
-
-          {/* Vibration Toggle */}
-          <div className="p-3.5 rounded-2xl bg-[#050510] border border-white/10 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <Vibrate className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span className="text-xs font-semibold text-white">Haptic Vibration</span>
-              </div>
-              <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">
-                Tactile pulse on mobile
-              </span>
-            </div>
-
-            <button
-              onClick={() => updateSetting("vibrationEnabled", !reminderSettings.vibrationEnabled)}
-              className={`py-1 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                reminderSettings.vibrationEnabled
-                  ? "bg-[#D4AF37]/20 border border-[#D4AF37]/50 text-[#D4AF37]"
-                  : "bg-white/5 border border-white/10 text-zinc-500"
-              }`}
-            >
-              {reminderSettings.vibrationEnabled ? "ON" : "OFF"}
-            </button>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-zinc-400">
+              {isAndroidDevice() ? "Available" : "Android Ready"}
+            </span>
           </div>
         </div>
       </div>
+
+      {/* Section 9: Notifications & Move Reminders Production Settings */}
+      <NotificationSettingsSection availableMoves={moves} />
 
       {/* PWA & Offline Experience Option */}
       <div className="p-5 sm:p-6 rounded-3xl bg-[#101025] border border-white/10 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -788,13 +830,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
           <div>
             <span className="text-[10px] uppercase font-mono tracking-widest text-[#D4AF37] block mb-0.5">
-              CREATOR SPOTLIGHT
+              CREATOR &amp; FOUNDER
             </span>
             <h3 className="text-base font-light font-serif-cresive text-white">
               Brian Omuse · Malaba, Kenya
             </h3>
             <p className="text-xs text-zinc-300 mt-0.5 max-w-md">
-              Built by a 14-year-old student at Malaba Township with the belief that your future is a trajectory, not a destination.
+              Created and founded in 2026 by Brian Omuse in Malaba, Kenya. Built with the conviction that your future is a trajectory, not a destination.
             </p>
           </div>
         </div>
@@ -803,7 +845,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           onClick={onOpenCreatorStory}
           className="py-2 px-5 rounded-full border border-[#D4AF37]/50 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
         >
-          Read Creator Story
+          Brian&apos;s Story
         </button>
       </div>
 
@@ -817,11 +859,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 CRESCIVE
               </span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#D4AF37]/15 text-[#D4AF37] font-mono">
-                v1.0
+                2026
               </span>
             </div>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              The personal development system for becoming.
+            <p className="text-xs text-zinc-400 mt-0.5 font-serif-cresive italic">
+              &ldquo;The app of becoming.&rdquo; · A personal growth and self-development platform
             </p>
           </div>
         </div>
