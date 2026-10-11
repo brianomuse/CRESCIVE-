@@ -117,7 +117,14 @@ export const FirebaseAuthProvider: React.FC<{
       console.error("Google sign in error:", error);
       // Ignore user closed popup errors gracefully
       if (error?.code !== "auth/popup-closed-by-user") {
-        setAuthError(error?.message || "Sign in failed. Please try again.");
+        if (error?.code === "auth/unauthorized-domain") {
+          const currentHost = typeof window !== "undefined" ? window.location.hostname : "trycrescive.vercel.app";
+          setAuthError(
+            `Domain "${currentHost}" is not yet added to Authorized Domains in Firebase Console. Please add "${currentHost}" in Firebase Console > Authentication > Settings > Authorized domains.`
+          );
+        } else {
+          setAuthError(error?.message || "Sign in failed. Please try again.");
+        }
       }
     } finally {
       setAuthLoading(false);

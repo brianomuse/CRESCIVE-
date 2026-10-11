@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-import { createServer as createViteServer } from "vite";
 import { initializeApp as initAdminApp, getApps as getAdminApps } from "firebase-admin/app";
 import { getMessaging as getAdminMessaging } from "firebase-admin/messaging";
 import { getFirestore as getAdminFirestore } from "firebase-admin/firestore";
@@ -13,6 +12,27 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Enable standard CORS for Vercel deployments and preview URLs
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
+// Normalize request URL for Vercel serverless function routing
+app.use((req, _res, next) => {
+  if (req.url.startsWith("/api/index.ts")) {
+    req.url = req.url.replace(/^\/api\/index\.ts/, "");
+    if (!req.url.startsWith("/")) req.url = "/" + req.url;
+    if (!req.url.startsWith("/api")) req.url = "/api" + req.url;
+  }
+  next();
+});
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -936,6 +956,7 @@ async function startServer() {
   const httpServer = http.createServer(app);
 
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: {
         middlewareMode: true,

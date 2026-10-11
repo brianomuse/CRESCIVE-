@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -8,6 +8,9 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   getFirestore,
   doc,
   getDoc,
@@ -23,13 +26,43 @@ import {
 import firebaseConfig from "../../firebase-applet-config.json";
 import { UserProfile } from "../types";
 
-// Initialize Firebase App
-export const app = initializeApp(firebaseConfig);
+// Active Firebase Configuration supporting both firebase-applet-config.json and Vercel/Vite environment variables
+const activeFirebaseConfig = {
+  projectId: import.meta.env?.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  appId: import.meta.env?.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+  apiKey: import.meta.env?.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: import.meta.env?.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  storageBucket: import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
+  messagingSenderId: import.meta.env?.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
+  measurementId: import.meta.env?.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig.measurementId || "",
+};
+
+// Initialize Firebase App safely without duplicate instances
+export const app = getApps().length === 0 ? initializeApp(activeFirebaseConfig) : getApp();
 
 // Initialize Firestore with explicit database ID if provided, otherwise default
-export const db = (firebaseConfig as any).firestoreDatabaseId
-  ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
-  : getFirestore(app);
+const firestoreDbId =
+  import.meta.env?.VITE_FIREBASE_FIRESTORE_DATABASE_ID ||
+  (firebaseConfig as any).firestoreDatabaseId;
+
+// Initialize Firestore with persistent offline caching when in browser, falling back safely
+export const db = (() => {
+  try {
+    if (typeof window !== "undefined") {
+      const cacheSettings = {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      };
+      return firestoreDbId
+        ? initializeFirestore(app, cacheSettings, firestoreDbId)
+        : initializeFirestore(app, cacheSettings);
+    }
+  } catch (_e) {
+    // If persistentLocalCache is unavailable or already initialized, fallback cleanly
+  }
+  return firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
+})();
 
 // Initialize Auth
 export const auth = getAuth(app);
@@ -302,7 +335,17 @@ export async function syncRealUserToFirestore(
 
   try {
     await setDoc(userRef, payload, { merge: true });
-  } catch (error) {
+  } catch (error: any) {
+    const isOffline =
+      error?.code === "unavailable" ||
+      error?.message?.includes("client is offline") ||
+      error?.message?.includes("offline") ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    if (isOffline) {
+      console.warn("User sync to Firestore deferred (offline):", error?.message || error);
+      return;
+    }
     console.error("Failed to sync user to Firestore:", error);
     handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
   }

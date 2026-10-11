@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db, auth } from "../lib/firebase";
 import {
   UserProfile,
   MoveItem,
@@ -63,6 +63,9 @@ if (typeof window !== "undefined") {
   window.addEventListener("online", () => {
     if (currentSyncStatus === "offline") {
       updateSyncStatus("syncing");
+      if (auth.currentUser) {
+        syncTrajectoryWithCloud(auth.currentUser.uid);
+      }
     }
   });
   window.addEventListener("offline", () => {
@@ -356,7 +359,24 @@ export async function syncTrajectoryWithCloud(
 
   try {
     const trajectoryDocRef = doc(db, "users", userId, "trajectory", "data");
-    const snapshot = await getDoc(trajectoryDocRef);
+    let snapshot;
+    try {
+      snapshot = await getDoc(trajectoryDocRef);
+    } catch (readError: any) {
+      const isOffline =
+        readError?.code === "unavailable" ||
+        readError?.message?.includes("client is offline") ||
+        readError?.message?.includes("offline") ||
+        (typeof navigator !== "undefined" && !navigator.onLine);
+
+      if (isOffline) {
+        console.warn("Cloud Trajectory sync deferred: client is currently offline.");
+        updateSyncStatus("offline");
+        return false;
+      }
+      throw readError;
+    }
+
     const local = getLocalTrajectorySnapshot();
 
     let mergedData: {
@@ -407,7 +427,22 @@ export async function syncTrajectoryWithCloud(
       lastDeviceId: CLIENT_DEVICE_ID,
     };
 
-    await setDoc(trajectoryDocRef, cloudPayload, { merge: true });
+    try {
+      await setDoc(trajectoryDocRef, cloudPayload, { merge: true });
+    } catch (writeError: any) {
+      const isOffline =
+        writeError?.code === "unavailable" ||
+        writeError?.message?.includes("client is offline") ||
+        writeError?.message?.includes("offline") ||
+        (typeof navigator !== "undefined" && !navigator.onLine);
+
+      if (isOffline) {
+        console.warn("Cloud Trajectory upload deferred: client is currently offline.");
+        updateSyncStatus("offline");
+        return false;
+      }
+      throw writeError;
+    }
 
     localStorage.setItem(STORAGE_KEY_SYNC_VERSION, String(nextVersion));
     updateSyncStatus("synced");
@@ -422,6 +457,18 @@ export async function syncTrajectoryWithCloud(
 
     return true;
   } catch (error: any) {
+    const isOffline =
+      error?.code === "unavailable" ||
+      error?.message?.includes("client is offline") ||
+      error?.message?.includes("offline") ||
+      (typeof navigator !== "undefined" && !navigator.onLine);
+
+    if (isOffline) {
+      console.warn("Cloud Trajectory sync deferred: client is currently offline.");
+      updateSyncStatus("offline");
+      return false;
+    }
+
     console.error("Cloud Trajectory Sync Error:", error);
     updateSyncStatus("error");
     return false;
@@ -471,12 +518,19 @@ export function listenToRemoteTrajectory(
       });
     },
     (error) => {
-      console.error("Remote trajectory snapshot error:", error);
-      if (typeof navigator !== "undefined" && !navigator.onLine) {
+      const isOffline =
+        error?.code === "unavailable" ||
+        error?.message?.includes("client is offline") ||
+        error?.message?.includes("offline") ||
+        (typeof navigator !== "undefined" && !navigator.onLine);
+
+      if (isOffline) {
         updateSyncStatus("offline");
-      } else {
-        updateSyncStatus("error");
+        return;
       }
+
+      console.error("Remote trajectory snapshot error:", error);
+      updateSyncStatus("error");
     }
   );
 
